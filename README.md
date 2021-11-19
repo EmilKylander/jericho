@@ -8,6 +8,7 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=EmilKylander_jericho&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=EmilKylander_jericho)
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=EmilKylander_jericho&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=EmilKylander_jericho)
 [![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=EmilKylander_jericho&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=EmilKylander_jericho)
+[![CircleCI](https://circleci.com/gh/EmilKylander/jericho/tree/master.svg?style=svg)](https://circleci.com/gh/EmilKylander/jericho/tree/master)
 </div>
 
 1. What is The Jericho?
