@@ -19,6 +19,9 @@ jobs:
           -Dsonar.test.exclusions=tests/**
           -Dsonar.python.coverage.reportPaths=coverage.xml
           -Dsonar.python.version=3.8.10
+          -Dsonar.core.codeCoveragePlugin=pytest
+          -Dsonar.projectKey=EmilKylander_jericho
+          -Dsonar.organization=emilkylander
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
