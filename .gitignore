@@ -6,5 +6,4 @@ __pycache__
 .scannerwork
 .vscode
 .pylintrc
-coverage.xml
 .env
