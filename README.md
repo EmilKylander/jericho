@@ -4,6 +4,10 @@
 
 ![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)
 [![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=EmilKylander_jericho&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=EmilKylander_jericho)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=EmilKylander_jericho&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=EmilKylander_jericho)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=EmilKylander_jericho&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=EmilKylander_jericho)
+[![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=EmilKylander_jericho&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=EmilKylander_jericho)
 </div>
 
 1. What is The Jericho?
