@@ -1,0 +1,2 @@
+jericho_database: sqlite:///jericho/jericho.db
+log_level: info

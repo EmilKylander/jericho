@@ -1,0 +1,10 @@
+*.pyc
+config/configuration.yml
+.coverage
+__pycache__
+.pytest_cache
+.scannerwork
+.vscode
+.pylintrc
+coverage.xml
+.env

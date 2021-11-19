@@ -1,0 +1,6 @@
+[
+    {
+        "endpoint": "/.babelrc",
+        "pattern": "JSON"
+    }
+]

@@ -1,0 +1,66 @@
+version: "3"
+
+services:
+  apache-standalone:
+    image: 'bitnami/apache:latest'
+    volumes:
+      - ../../../tests/assets/web-server:/opt/bitnami/apache2/htdocs
+    network_mode: host
+  jericho-standalone:
+    build:
+      context: ../../../
+      dockerfile: tests/integration/test-standalone/Dockerfile
+    depends_on:
+     - apache-standalone
+    network_mode: host
+    extra_hosts:
+      host1.com: 127.0.0.1
+      host2.com: 127.0.0.1
+      host3.com: 127.0.0.1
+      host4.com: 127.0.0.1
+      host5.com: 127.0.0.1
+      host6.com: 127.0.0.1
+      host7.com: 127.0.0.1
+      host8.com: 127.0.0.1
+      host9.com: 127.0.0.1
+      host10.com: 127.0.0.1
+      host11.com: 127.0.0.1
+      host12.com: 127.0.0.1
+      host13.com: 127.0.0.1
+      host14.com: 127.0.0.1
+      host15.com: 127.0.0.1
+      host16.com: 127.0.0.1
+      host17.com: 127.0.0.1
+      host18.com: 127.0.0.1
+      host19.com: 127.0.0.1
+      host20.com: 127.0.0.1
+      host21.com: 127.0.0.1
+      host22.com: 127.0.0.1
+      host23.com: 127.0.0.1
+      host24.com: 127.0.0.1
+      host25.com: 127.0.0.1
+      host26.com: 127.0.0.1
+      host27.com: 127.0.0.1
+      host28.com: 127.0.0.1
+      host29.com: 127.0.0.1
+      host30.com: 127.0.0.1
+      host31.com: 127.0.0.1
+      host32.com: 127.0.0.1
+      host33.com: 127.0.0.1
+      host34.com: 127.0.0.1
+      host35.com: 127.0.0.1
+      host36.com: 127.0.0.1
+      host37.com: 127.0.0.1
+      host38.com: 127.0.0.1
+      host39.com: 127.0.0.1
+      host40.com: 127.0.0.1
+      host41.com: 127.0.0.1
+      host42.com: 127.0.0.1
+      host43.com: 127.0.0.1
+      host44.com: 127.0.0.1
+      host45.com: 127.0.0.1
+      host46.com: 127.0.0.1
+      host47.com: 127.0.0.1
+      host48.com: 127.0.0.1
+      host49.com: 127.0.0.1
+      host50.com: 127.0.0.1

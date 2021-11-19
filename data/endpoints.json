@@ -1,0 +1,922 @@
+[
+  {
+      "endpoint": "/.babelrc",
+      "pattern": "JSON"
+  },
+  {
+      "endpoint": "/.bash_history",
+      "pattern": "cd "
+  },
+  {
+      "endpoint": "/.bashrc",
+      "pattern": "export"
+  },
+  {
+      "endpoint": "/build.xml",
+      "pattern": "XML"
+  },
+  {
+      "endpoint": "/circle.yml",
+      "pattern": "YML"
+  },
+  {
+      "endpoint": "/composer.json",
+      "pattern": "JSON"
+  },
+  {
+      "endpoint": "/composer.lock",
+      "pattern": "JSON"
+  },
+  {
+      "endpoint": "/CVS/Root",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/Dockerfile",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.dockerignore",
+      "pattern": "NO_SPACES"
+  },
+  {
+      "endpoint": "/.editorconfig",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.git/config",
+      "pattern": "[core]"
+  },
+  {
+      "endpoint": "/.git/HEAD",
+      "pattern": "ref:"
+  },
+  {
+      "endpoint": "/.gitignore",
+      "pattern": "NO_SPACES"
+  },
+  {
+      "endpoint": "/gruntfile.coffee",
+      "pattern": "grunt-init-gruntfile"
+  },
+  {
+      "endpoint": "/Gruntfile.coffee",
+      "pattern": "grunt-init-gruntfile"
+  },
+  {
+      "endpoint": "/gruntfile.js",
+      "pattern": "require("
+  },
+  {
+      "endpoint": "/Gruntfile.js",
+      "pattern": "require("
+  },
+  {
+      "endpoint": "/Gulpfile",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/gulpfile.js",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/Gulpfile.js",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.htpasswd",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/Jenkinsfile",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/jenkins",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.jestrc",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/license",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/LICENSE",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/license.md",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/LICENSE.md",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/license.txt",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/LICENSE.txt",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/mkdocs.yml",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.npmignore",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/package.json",
+      "pattern": "JSON"
+  },
+  {
+      "endpoint": "/phpinfo.php",
+      "pattern": "<title>phpinfo()</title>"
+  },
+  {
+      "endpoint": "/phpunit.xml",
+      "pattern": "XML"
+  },
+  {
+      "endpoint": "/.profile",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/readme",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/README",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/readme.html",
+      "pattern": ""
+  },
+  {
+      "endpoint": "/README.html",
+      "pattern": ""
+  },
+  {
+      "endpoint": "/readme.md",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/README.md",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/readme.mkd",
+      "pattern": ""
+  },
+  {
+      "endpoint": "/README.mkd",
+      "pattern": ""
+  },
+  {
+      "endpoint": "/readme.txt",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/README.txt",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.swp",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/tags",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/test.php",
+      "pattern": ""
+  },
+  {
+      "endpoint": "/Thumbs.db",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.travis.yml",
+      "pattern": "YML"
+  },
+  {
+      "endpoint": "/tsconfig.json",
+      "pattern": "JSON"
+  },
+  {
+      "endpoint": "/webpack.config.js",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/yarn-error.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/yarn.lock",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/?view=log",
+      "pattern": "<title>ZM - System Log</title>"
+  },
+  {
+      "endpoint": "/wp-app.log",
+      "pattern": "Array"
+  },
+  {
+      "endpoint": "/Trace.axd",
+      "pattern": "<td><h1>Application Trace</h1></td>"
+  },
+  {
+      "endpoint": "/1238a92f573a48e58d356c42ca2c9610",
+      "pattern": "Rails.root"
+  },
+  {
+      "endpoint": "/roundcube/logs/sendmail",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/roundcube/logs/errors.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/_debug_toolbar",
+      "pattern": "Pyramid DebugToolbar"
+  },
+  {
+      "endpoint": "/production.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/logs/production.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/log/production.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/_debugbar/open?max=20&offset=0",
+      "pattern": "datetime"
+  },
+  {
+      "endpoint": "/OA_HTML/bin/sqlnet.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/npm-debug.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/telescope/requests",
+      "pattern": "<title>Telescope</title>"
+  },
+  {
+      "endpoint": "/storage/logs/laravel.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/debug.seam",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/prometheus",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/routes/error_log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/config/error_log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/error_log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/errors_log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/logs/error.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/logs/errors.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/log/error.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/log/errors.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/errors/errors.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/error/error.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/errors.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/error.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/error.txt",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/errors.txt",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/admin/logs/error.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/admin/logs/errors.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/admin/log/error.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/admin/error.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/admin/errors.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/MyErrors.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/log.txt",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/logs.txt",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/log.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/application/logs/application.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/application/logs/default.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/elmah.axd",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/admin/login/?next=/admin",
+      "pattern": "DB_HOST"
+  },
+  {
+      "endpoint": "/log/development.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/logs/development.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/development.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/darkstat",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/access.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/app.json",
+      "pattern": "JSON"
+  },
+  {
+      "endpoint": "/.s3cfg",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/nginx.conf",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.vimrc",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/Homestead.yaml",
+      "pattern": "YML"
+  },
+  {
+      "endpoint": "/Rakefile",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/Resources.zip.manifest",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/main.js",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.ssh/known_hosts",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.env.sample",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/web.config",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.ssh/id_rsa.pub",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/config.lua",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/docker-compose.yml",
+      "pattern": "YML"
+  },
+  {
+      "endpoint": "/version",
+      "pattern": ""
+  },
+  {
+      "endpoint": "/.circleci/config.yml",
+      "pattern": "YML"
+  },
+  {
+      "endpoint": "/blog/_wpeprivate/config.json",
+      "pattern": "JSON"
+  },
+  {
+      "endpoint": "/.ssh/config",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/config.rb",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/Vagrantfile",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.mysql_history",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.eslintrc.json",
+      "pattern": "JSON"
+  },
+  {
+      "endpoint": "/.hg/requires",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/Makefile",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.svn/entries",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/v2/_catalog",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/nginx_app.conf",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/server-status",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/yarn-debug.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/config/database.yml",
+      "pattern": "YML"
+  },
+  {
+      "endpoint": "/config.json",
+      "pattern": "JSON"
+  },
+  {
+      "endpoint": "/VERSION",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/Gemfile",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.bowerrc",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/pom.xml",
+      "pattern": "XML"
+  },
+  {
+      "endpoint": "/.gitattributes",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.env",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/sftp-config.json",
+      "pattern": "JSON"
+  },
+  {
+      "endpoint": "/.hg",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/Procfile",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/config/deploy.yml",
+      "pattern": "YML"
+  },
+  {
+      "endpoint": "/.appveyor.yml",
+      "pattern": "YML"
+  },
+  {
+      "endpoint": "/.aws/credentials",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/npm-shrinkwrap.json",
+      "pattern": "JSON"
+  },
+  {
+      "endpoint": "/manifest.yml",
+      "pattern": "YML"
+  },
+  {
+      "endpoint": "/manifest",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/bower.json",
+      "pattern": "JSON"
+  },
+  {
+      "endpoint": "/karma.conf.js",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/config.ru",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/metrics",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/rancher-compose.yml",
+      "pattern": "YML"
+  },
+  {
+      "endpoint": "/_config.yml",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.gitmodules",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.subversion/config",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/_wpeprivate/config.json",
+      "pattern": "JSON"
+  },
+  {
+      "endpoint": "/.rspec",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.htaccess",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/phptest.php",
+      "pattern": ""
+  },
+  {
+      "endpoint": "/admin.php",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.ssh/id_rsa",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.ssh/authorized_keys",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/php.php",
+      "pattern": ""
+  },
+  {
+      "endpoint": "/CVS/Entries",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/vendor/autoload.php",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/Gemfile.lock",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/index.js",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/aliases",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/after.sh",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/_cat/indices",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/serverless.yml",
+      "pattern": "YML"
+  },
+  {
+      "endpoint": "/Elmah.axd",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/RELEASE_NOTES.txt",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/env",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/test/php/test.ph",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/test/python/test.py",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/test/apacheasp/test.asp",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/test/cgi/test.html",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/test/fcgi/fcgi.py",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/test/fcgi/test.fcgi",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/test/ssi/test.shtml",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.yarnrc",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/heapdump",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/django.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/api-docs",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.arcrc",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.arcconfig",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/api/v1/targets",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/api/v1/labels",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/api/v1/label/version/values",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/config.php.txt",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/app-stats",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/sqlnet.log",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/wp-config.txt",
+      "pattern": "<?php"
+  },
+  {
+      "endpoint": "/wp-config.bak",
+      "pattern": "<?php"
+  },
+  {
+      "endpoint": "/~wp-config.php",
+      "pattern": "<?php"
+  },
+  {
+      "endpoint": "/.gitlab-ci.yml",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.releaserc.yml",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/autodevops.yml",
+      "pattern": "YML"
+  },
+  {
+      "endpoint": "/base_autodevops.yml",
+      "pattern": "YML"
+  },
+  {
+      "endpoint": "/sonar-project.properties",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.goreleaser.yml",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/DockerfileBuild",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/Cargo.toml",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/Cargo.lock",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.sbt",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.ivy2/cache",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.cache/pip",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/requirements.txt",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/.php_cs.php",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/deployment.yml",
+      "pattern": "YML"
+  },
+  {
+      "endpoint": "/ops/deployment.yaml",
+      "pattern": "YML"
+  },
+  {
+      "endpoint": "/.drone.yml",
+      "pattern": "YML"
+  },
+  {
+      "endpoint": "/config.xml",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "/control-server.json",
+      "pattern": "JSON"
+  },
+  {
+      "endpoint": "/application-server.json",
+      "pattern": "JSON"
+  },
+  {
+      "endpoint": "application.sh",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "cleanup.sh",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "graphite.sh",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "jenkins.sh",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "nginx.sh",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "update.sh",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "vagrant.sh",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "virtualbox.sh",
+      "pattern": "TEXT"
+  },
+  {
+      "endpoint": "~config.php",
+      "pattern": "<?php"
+  },
+  {
+      "endpoint": "~db-config.php",
+      "pattern": "<?php"
+  }
+]

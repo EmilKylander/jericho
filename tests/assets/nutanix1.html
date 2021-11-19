@@ -1,0 +1,201 @@
+<!DOCTYPE html><!--
+
+    $$$$$$$\  $$$$$$$$\  $$$$$$\  $$\      $$\
+    $$  __$$\ $$  _____|$$  __$$\ $$$\    $$$ |
+    $$ |  $$ |$$ |      $$ /  $$ |$$$$\  $$$$ |
+    $$$$$$$\ |$$$$$\    $asd$$$$$$$ |$$\$$\$$ $$ |
+    $$  __$$\ $$  __|   $$  __$$ |$$ \$$$  $$ |
+    $$ |  $$ |$$ |      $$ |  $$ |$$ |\$  /$$ |
+    $$$$$$$  |$$$$$$$$\ $$ |  $$ |$$ | \_/ $$ |
+    \_______/ \________|\__|  \__|\__|     \__|
+    
+    Copyright (c) 2020 Nutanix Inc. All rights reserved.
+    --><!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]--><!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]--><!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]--><!--[if gt IE 8]><!--><html lang="en"><!--<![endif]--><head><meta http-equiv="Content-Security-Policy" content="default-src *  data: blob: 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * data: blob: 'unsafe-inline'; font-src * data: blob: 'unsafe-inline'; worker-src  blob:  *.walkme.com; object-src  *.walkme.com"><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content=""><link id="favicon" rel="icon" sizes="32x32" href="https://cdn.beam.nutanix.com/assets/commons/img/nutanix-x.png"><title>Nutanix Beam - Multi Cloud Governance Solution for Cost Management and Security Compliance</title><meta name="importmap-type" content="systemjs-importmap"><link as="style" rel="preload" href="https://cdn.beam.nutanix.com/assets/commons/web-app-assets/js/bootstrap/3.3.6/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.beam.nutanix.com/assets/commons/web-app-assets/js/bootstrap/3.3.6/css/bootstrap.min.css"><style>.hidden{
+                    display: none !important;
+                }
+                /* Preloader */
+                @keyframes botmetrdic-loader-rotate {
+                    0% {
+                        transform: rotate(0deg);
+                    }
+                    100% {
+                        transform: rotate(360deg);
+                    }
+                }
+                #preloader {
+                    width: 100%;
+    
+                    height: 100%;
+                    text-align: center;
+                    position: absolute;
+                    z-index: 1000;
+                }
+                #page-background{
+                    width: 100%;
+                    background: linear-gradient(-134deg,#002025 0%,#3f3251 98%);
+                    height: 100%;
+                    position: fixed;
+                }
+                .vertical-centered-box::after{
+                    content: '';
+                    display: inline-block;
+                    height: 100%;
+                    vertical-align: middle;
+                    margin-right: -0.25em;
+                }
+                #preloader .botmetric-loader {
+                    transition: all 0.5s cubic-bezier(0.6, -0.28, 0.74, 0.05);
+                    position: relative;
+                    box-sizing: border-box;ss
+s                    display: inline-block;
+ ssssss                   vertical-align: middle;
+                    text-align: left;
+                    font-size: 0;
+       ss         }
+                #preloader .loader-circle {
+                    width: 120px;
+                    height: 120px;
+          ss          position: absolute;
+                    left: 50%;
+                    top: 50%;
+                    margin-left: -60px;
+                    margin-top: -60px;
+                    border-radius: 50%;
+                    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+                }
+                #preloader .loader-line-mask {
+                    width: 60px;
+                    height: 120px;
+                    position: absolute;
+                    left: 50%;
+                    top: 50%;
+                    margin-left: -60px;
+                    margin-top: -60px;
+                    overflow: hidden;
+                    transform-origin: 60px 60px;
+                    animation: botmetric-loader-rotate 1.2s infinite linear;
+                }
+                #preloader .loader-line-mask .loader-line {
+                    width: 120px;
+                    height: 120px;
+                    border-radius: 50%;
+                    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset;
+                }
+    
+                #preloader svg{
+                    fill : white;
+                }
+    
+                /**
+                App loader
+                 */
+    
+                @keyframes micro-app-loader-rotate {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg);}
+                }
+                .micro-app-placeholder{
+                    position: fixed;
+                    height: calc(100% - 60px);
+                    width: 100%;
+                    margin-top: 60px;
+                    z-index: 10000;
+                    background: white;
+                    display: flex;
+                    justify-content: center;
+                    align-content: center;
+                    flex-direction: column;
+                    opacity: 0.5;
+                }
+                .full-opacity{
+                    opacity: 1;
+                }
+                .micro-app-placeholder .micro-app-loader-item{
+                    display: flex;
+                    justify-content: center;
+                }
+                .micro-app-loader-item.reload-msg{
+                    margin-top: 15px;
+                    text-align: center;
+                }
+                .micro-app-loader-item.has-error{
+                    display: flex;
+                    justify-content: center;
+                    color: #627386;
+                    margin-top: 15px;
+                }
+                .bm-link-btn{
+                    cursor: pointer;
+                    color: #22a5f7;
+                    text-decoration: none;
+                }
+                #microAppLoader .micro-app-loader-container{
+                    margin-top: 20px;
+                }
+    
+                #microAppLoader .app-loading-circle{
+                    border: .2em solid transparent;
+                    border-top-color: rgba(89, 188, 249, 0.8);
+                    border-radius: 50%;
+                    animation: micro-app-loader-rotate 1.2s infinite linear;
+                    position: relative;
+                    width: 100px;
+                    height: 100px;
+                }
+                #microAppLoader .app-loading-circle:before{
+                    content: '';
+                    display: block;
+                    width: inherit;
+                    height: inherit;
+                    position: absolute;
+                    top: -.2em;
+                    left: -.2em;
+                    border: .2em solid rgba(89, 188, 249, 0.2);
+                    border-radius: 50%;
+                    opacity: .5;
+                }
+                .walkme-action-close {
+                    font-size: 24px !important;
+                }</style><!--    <script src='https://unpkg.com/core-js-bundle/minified.js'></script>--><script src="https://apis.google.com/js/platform.js" async defer="defer"></script><script src="https://cdn.beam.nutanix.com/assets/commons/web-app-assets/js/core-js-bundle@3.1.4/minified.js"></script><script src="https://cdn.beam.nutanix.com/assets/commons/web-app-assets/js/core-js@2.4.1/shim.min.js"></script><script src="https://cdn.beam.nutanix.com/assets/commons/web-app-assets/js/zone/0.10.3/zone.js"></script><script src="https://cdn.beam.nutanix.com/assets/commons/web-app-assets/js/systemjs/6.3.1/system.min.js"></script><script src="https://cdn.beam.nutanix.com/assets/commons/web-app-assets/js/systemjs/6.3.1/amd.min.js"></script><script src="https://cdn.beam.nutanix.com/assets/commons/web-app-assets/js/systemjs/6.3.1/named-exports.js"></script><script src="https://cdn.beam.nutanix.com/assets/commons/web-app-assets/js/systemjs/6.3.1/named-register.min.js"></script><script src="https://cdn.beam.nutanix.com/assets/commons/web-app-assets/js/systemjs/6.3.1/use-default.min.js"></script><!--- Webcomponent polyfill ---><!--    <script src="https://cdn.beam.nutanix.us/assets/commons/web-app-assets/js/webcomponentjs@2.0.0/webcomponents-bundle.js"></script>--><link rel="prefetch" as="script" href="/webcomponents/webcomponents-loader.js"><script async src="/webcomponents/webcomponents-loader.js"></script><script>if (!window.customElements) { document.write('<!--'); }</script><script src="/webcomponents/custom-elements-es5-adapter.js"></script><!-- ! DO NOT REMOVE THIS COMMENT, WE NEED ITS CLOSING MARKER --><!--    <script src="node_modules/@webcomponents/webcomponentsjs/webcomponents-loader.js" defer></script>--><!-- Load the common deps--><script>window.SystemJS = window.System;</script><script type="systemjs-importmap" src="/manifests.json"></script><script>//Walk me variables at global level & Walkme functions
+            window.WalkmeEvent = new CustomEvent('walkmeInsightsTrigger');
+            let defaultWALKMEVARIABLES = {
+                isAdmin:false,
+                appsConfigured: '',
+                cloudConfigured: '',
+                billingPlan: '',
+                role: '',
+                secure_email_hmac: '',
+                viewingDummyData: {}
+            }
+            let walkMe = localStorage.getItem('WALKMEVARIABLES')
+            if (walkMe) {
+                window.WALKMEVARIABLES = JSON.parse(walkMe);
+            } else {
+                window.WALKMEVARIABLES = defaultWALKMEVARIABLES;
+            }
+            window.onWalkMeInsightsAPIReady = function() {
+                window.walkmeInsightsReady = true;
+                window.dispatchEvent(window.WalkmeEvent);
+            }</script><!-- Google Tag Manager --><!--Walkme script--><script type="text/javascript" defer="defer">(function() {
+                var walkme = document.createElement('script');
+                walkme.type = 'text/javascript';
+                walkme.async = true;
+                walkme.src = 'https://cdn.walkme.com/users/5ac4996d3e5d49b69f7bf57f09821945/walkme_5ac4996d3e5d49b69f7bf57f09821945_https.js';
+                var s = document.getElementsByTagName('script')[0];
+                s.parentNode.insertBefore(walkme, s);
+                window._walkmeConfig = {smartLoad:true};
+            })();</script><!-- Google Tag Manager --><script defer="defer">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    
+              new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    
+        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    
+        })(window,document,'script','dataLayer','GTM-5662GDH');</script><!-- End Google Tag Manager --><link href="/rootApplication.css" rel="stylesheet"></head><body><!--&lt;!&ndash; Load the application with webpack html webpack plugin will put the apps in  script tag body &ndash;&gt;--><!--<script>--><!--    System.import('@beam/config')--><!--</script>--><!----Main Initial Loader ---><div id="preloader" class="vertical-centered-box"><div id="page-background"></div><div class="botmetric-loader content"><div class="loader-circle"></div><div class="loader-line-mask"><div class="loader-line"></div></div><svg viewBox="0 0 22 16" width="36" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="logo"><path d="M4.99257281,15.9015351 C4.92949886,15.9623628 4.84534021,16 4.75289183,16 L0.354655764,16 C0.158766122,16 0,15.8321534 0,15.625339 C0,15.5221219 0.0396464777,15.4285993 0.103801687,15.3611185 L7.81107695,8.28609005 C7.88838758,8.21746873 7.93740504,8.11463181 7.93740504,7.99962933 C7.93740504,7.89089972 7.89343349,7.79319513 7.82351152,7.72495399 L0.12560725,0.660000166 C0.0486570408,0.591378854 0,0.489112188 0,0.374489884 C0,0.167865599 0.158766122,1.90086739e-05 0.354655764,1.90086739e-05 L4.75289183,1.90086739e-05 C4.84570063,1.90086739e-05 4.93021971,0.0374660962 4.99329365,0.0988641129 L13.2905806,7.71716044 C13.3657287,7.78559166 13.4131242,7.88652772 13.4131242,7.99962933 C13.4131242,8.11292103 13.3655485,8.21461743 13.2900399,8.28342883 L4.99257281,15.9015351 Z M16.7182889,15.8922969 L12.4510664,11.9744191 C12.3733954,11.9052275 12.3243779,11.8025807 12.3243779,11.6873881 C12.3243779,11.590634 12.3593389,11.5024337 12.4164659,11.4359033 L14.6127005,9.41946322 C14.6775766,9.34437896 14.7712864,9.29704736 14.8754485,9.29704736 C14.9734835,9.29704736 15.0619672,9.33886644 15.1263026,9.40615715 L21.574622,15.3275492 C21.6595015,15.3959804 21.7142857,15.5039496 21.7142857,15.6254151 C21.7142857,15.8320394 21.5555196,15.9998859 21.35963,15.9998859 L16.9669804,15.9998859 C16.870207,15.9998859 16.7822639,15.9588272 16.7182889,15.8922969 Z M16.7182889,0.107399008 C16.7822639,0.0410587356 16.870207,0 16.9669804,0 L21.35963,0 C21.5555196,0 21.7142857,0.16784659 21.7142857,0.374470876 C21.7142857,0.495936302 21.6595015,0.603715483 21.574622,0.672146709 L15.1263026,6.59353871 C15.0619672,6.66101951 14.9734835,6.70283859 14.8754485,6.70283859 C14.7712864,6.70283859 14.6775766,6.65569708 14.6127005,6.58042273 L12.4164659,4.5639826 C12.3593389,4.49745224 12.3243779,4.409252 12.3243779,4.31249785 C12.3243779,4.19749537 12.3733954,4.09465844 12.4510664,4.02565696 L16.7182889,0.107399008 Z"></path></svg></div></div><!---- END ---><!-- App Loader Screen start--><div class="micro-app-placeholder hidden" id="microAppLoader"><div class="micro-app-loading-text micro-app-loader-item" id="microAppLoaderText">Loading ...</div><div class="micro-app-loader-container micro-app-loader-item"><div class="app-loading-circle"></div></div></div><!-- App Loader Screen End --><!--- App Loading Error Window ------><div class="micro-app-placeholder full-opacity hidden" id="microAppError"><div class="image-item micro-app-loader-item"><img width="76" height="62" alt="beam-error" class="error-icon mt-20" src="https://cdn.beam.nutanix.com/assets/commons/img/nutanix-empty-state/general-error.svg"></div><div class="micro-app-loading-text micro-app-loader-item has-error" style="white-space: break-spaces">Failed to load the<span id="errorApp"></span>application</div><div class="bm-link-btn micro-app-loader-item reload-msg" onclick="window.location.reload()">Click to refresh</div></div><!---- App Loading Error End ---------><div class="app-container hidden" id="AppRoot"><div id="login-app"></div><div id="topbar-app"></div><div id="microapp-shell"></div></div><!-- Added since app was not opening in safari browser. (Intl.NumberFormat is never implemented. So we need to include it externally)--><script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=Intl.~locale.en&callback=polyfillsAreLoaded" defer="defer" async></script><script>function polyfillsAreLoaded() {
+        if(Intl.__disableRegExpRestore) {
+            Intl.__disableRegExpRestore();
+        }
+        }</script><p>Not found!</p><!---- Intercom && Walkme ---><script defer="defer">(function(){
+                var isrc='https://widget.intercom.io/widget/28j1tr28>';
+                var w=window; w.intercomSet = false;var ic=w.Intercom;if(typeof ic==="function"){ic('reattach_activator');ic('update',intercomSettings);}else{var d=document;var i=function(){i.c(arguments)};i.q=[];i.c=function(args){i.q.push(args)};w.Intercom=i;function l(){var s=d.createElement('script');s.type='text/javascript';s.async=true;s.src=isrc;var x=d.getElementsByTagName('script')[0];x.parentNode.insertBefore(s,x);}if(w.attachEvent){w.attachEvent('onload',l);}else{w.addEventListener('load',l,false);}}})()</script><!-------------------------- END ---------------------------------><noscript><div style="display:inline;"><img width="0" height="0" alt="Beam" height="1" width="1" style="border-style:none;" src="//www.googleadservices.com/pagead/conversion/936989074/?label=3_pMCNrnvGQQkqPlvgM&amp;guid=ON&amp;script=0"/></div></noscript><!-- Google Tag Manager (noscript) --><noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5662GDH" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript><!-- End Google Tag Manager (noscript) --><script type="text/javascript" src="/babelPolyfill.0f8ecea5384f702b87a5.js"></script><script type="text/javascript" src="/rootApplication.f97d8ce69b48f08ebd04.js"></script><script type="text/javascript" src="/eventBus.20f982237014b13b61dc.js"></script><script type="text/javascript" src="/appWebcomponents.d2babfcd2b58549bbab7.js"></script></body></html>

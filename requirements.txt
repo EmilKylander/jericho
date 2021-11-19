@@ -1,0 +1,11 @@
+mysql-connector-python==8.0.26
+PyYAML==5.3.1
+aiohttp==3.7.4.post0
+SQLAlchemy==1.4.25
+python-Levenshtein-wheels==0.13.2
+mpi4py
+bs4
+aioretry
+pytest
+pytest-asyncio
+async-timeout
