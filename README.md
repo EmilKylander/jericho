@@ -3,11 +3,7 @@
 <h3>Scalable & Reliable Endpoint Scanning</h3>
 
 ![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)
-![Code Quality Score](https://www.code-inspector.com/project/29496/score/svg)
 [![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
-[![Documentation Status](https://readthedocs.org/projects/ansicolortags/badge/?version=latest)](http://ansicolortags.readthedocs.io/?badge=latest)
-[![GitHub stars](https://badgen.net/github/stars/Naereen/Strapdown.js)](https://GitHub.com/Naereen/StrapDown.js/stargazers/)
-[![Buymeacoffee](https://badgen.net/badge/icon/buymeacoffee?icon=buymeacoffee&label)](https://https://www.buymeacoffee.com/)
 </div>
 
 1. What is The Jericho?
