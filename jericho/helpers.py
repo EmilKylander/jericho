@@ -70,8 +70,11 @@ def parse_cluster_settings(rank: int, mpi_size: int) -> ClusterRole:
 
 def _chunks(lst: list, size: int) -> typing.Iterable:
     """Yield successive n-sized chunks from lst."""
-    for i in range(0, len(lst), size):
-        yield lst[i : i + size]
+    if size == 0:
+        yield []
+    else:
+        for i in range(0, len(lst), size):
+            yield lst[i : i + size]
 
 
 def merge_array_to_iterator(

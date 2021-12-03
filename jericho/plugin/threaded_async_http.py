@@ -21,17 +21,14 @@ class ThreadedAsyncHTTP:
         self.configuration: dict = configuration
         self.parts: typing.List[typing.List[str]] = []
         self.async_http: AsyncHTTP = async_http
+        self.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
 
         self.finish_queue: queue.Queue = queue.Queue()
 
-        for i in range(num_threads):
+        for _ in range(num_threads):
             thread_queue: queue.Queue = queue.Queue()
             self.queues.append(thread_queue)
-            thread = threading.Thread(
-                target=self.send,
-                name=f"worker-{i}",
-                args=(thread_queue, self.finish_queue),
-            )
+            thread = threading.Thread(target=asyncio.run, args=(self._send(thread_queue, self.finish_queue),))
             self.threads.append(thread)
 
         [t.start() for t in self.threads]
@@ -47,7 +44,7 @@ class ThreadedAsyncHTTP:
                 "timeout": self.configuration.get("max_head_timeout"),
                 "ignore_multimedia": self.configuration.get("ignore_multimedia"),
                 "headers": {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
+                    "User-Agent": self.user_agent
                 },
             },
         )
@@ -63,12 +60,12 @@ class ThreadedAsyncHTTP:
                 "timeout": self.configuration.get("max_get_timeout"),
                 "ignore_multimedia": self.configuration.get("ignore_multimedia"),
                 "headers": {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
+                    "User-Agent": self.user_agent
                 },
             },
         )
 
-    def send(self, single_queue: queue.Queue, finish_queue: queue.Queue) -> typing.Any:
+    async def _send(self, single_queue: queue.Queue, finish_queue: queue.Queue) -> typing.Any:
         """
         A method which is ran through a thread, purpose is to
         launch async method to send HTTP requests
@@ -84,16 +81,15 @@ class ThreadedAsyncHTTP:
                 asyncio.set_event_loop(loop)
                 method, domains = payload
                 if method == HttpRequestMethods.HEAD:
-                    res = loop.run_until_complete(self._send_head_request(domains))
+                    res = await self._send_head_request(domains)
 
                 elif method == HttpRequestMethods.GET:
-                    res = loop.run_until_complete(self._send_get_request(domains))
+                    res = await self._send_get_request(domains)
                 else:
                     self.close()
                     raise InvalidHTTPRequestMethod
 
                 finish_queue.put(res)
-                loop.close()
 
     def get_response(self) -> typing.List[typing.Tuple]:
         """Loop through all of the work queues and combine the data"""
@@ -108,7 +104,6 @@ class ThreadedAsyncHTTP:
         self, domains: typing.List[str], method: HttpRequestMethods
     ) -> typing.Any:
         """Supply domains list to all the threads"""
-
         self.parts = split_array_by(domains, len(self.threads))
 
         for key, single_queue in enumerate(self.queues):

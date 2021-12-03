@@ -167,6 +167,7 @@ class ClusterFilter(logging.Filter):
         record.cluster = ClusterFilter.cluster
         return True
 
+cluster_role = parse_cluster_settings(rank, mpi_size)
 
 root = logging.getLogger()
 root.setLevel(log_level)
@@ -175,9 +176,16 @@ handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(log_level)
 handler.addFilter(ClusterFilter())
 handler.addFilter(RankFilter())
-formatter = logging.Formatter(
-    "%(asctime)s - %(cluster)s - %(rank)s - %(name)s - %(levelname)s - %(message)s"
-)
+
+if cluster_role != ClusterRole.DISABLED:
+    formatter = logging.Formatter(
+        "%(asctime)s - %(cluster)s - %(rank)s - %(name)s - %(levelname)s - %(message)s"
+    )
+else:
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+
 handler.setFormatter(formatter)
 root.addHandler(handler)
 
@@ -187,7 +195,6 @@ investigate = Investigate(endpoints_lookup)
 cache_lookup = CacheLookup(session)
 result_lookup = ResultLookup(session)
 diff = Diff()
-cluster_role = parse_cluster_settings(rank, mpi_size)
 
 result_relevant = ResultRelevant(
     investigate=investigate,
@@ -288,6 +295,7 @@ def execute(payload: tuple) -> list:
         logging.info("Scanned %s/%s", amount_scanned, total_sites)
 
     threaded_async_http.close()
+    loop.close()
     return total_results
 
 
