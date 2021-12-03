@@ -25,10 +25,14 @@ class ThreadedAsyncHTTP:
 
         self.finish_queue: queue.Queue = queue.Queue()
 
-        for _ in range(num_threads):
+        for workerID in range(num_threads):
             thread_queue: queue.Queue = queue.Queue()
             self.queues.append(thread_queue)
-            thread = threading.Thread(target=asyncio.run, args=(self._send(thread_queue, self.finish_queue),))
+            thread = threading.Thread(
+                target=self._send,
+                name=f"worker-{workerID}",
+                args=(thread_queue, self.finish_queue),
+            )
             self.threads.append(thread)
 
         [t.start() for t in self.threads]
@@ -65,7 +69,7 @@ class ThreadedAsyncHTTP:
             },
         )
 
-    async def _send(self, single_queue: queue.Queue, finish_queue: queue.Queue) -> typing.Any:
+    def _send(self, single_queue: queue.Queue, finish_queue: queue.Queue) -> typing.Any:
         """
         A method which is ran through a thread, purpose is to
         launch async method to send HTTP requests
@@ -77,14 +81,12 @@ class ThreadedAsyncHTTP:
                     logging.debug("Got a close signal, exiting thread..")
                     return True
             else:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
                 method, domains = payload
                 if method == HttpRequestMethods.HEAD:
-                    res = await self._send_head_request(domains)
+                    res = asyncio.run(self._send_head_request(domains))
 
                 elif method == HttpRequestMethods.GET:
-                    res = await self._send_get_request(domains)
+                    res = asyncio.run(self._send_get_request(domains))
                 else:
                     self.close()
                     raise InvalidHTTPRequestMethod
@@ -104,6 +106,7 @@ class ThreadedAsyncHTTP:
         self, domains: typing.List[str], method: HttpRequestMethods
     ) -> typing.Any:
         """Supply domains list to all the threads"""
+
         self.parts = split_array_by(domains, len(self.threads))
 
         for key, single_queue in enumerate(self.queues):

@@ -104,12 +104,6 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--domains-api",
-    type=str,
-    help='You can easily extract domains from a centralized source with this flag. Simply give it an API link that returns an array in a json format. If your api requires pages then you can simply add "*" to the page paramater and Jericho will replace it with a incrementing integer. E.g --domains-api https://api.com/?page=*',
-)
-
-parser.add_argument(
     "--version",
     action="store_true",
     help="Get the Jericho version",
@@ -122,7 +116,7 @@ if not path.exists(f"{HOME}/jericho"):
     os.mkdir(f"{HOME}/jericho")
     default_configuration = f"""
 jericho_database: sqlite:///{HOME}/jericho/jericho.db
-log_level: debug
+log_level: info
 max_result_and_404_percent_diff: 60
 max_head_timeout: 5
 max_get_timeout: 10
@@ -234,8 +228,6 @@ def execute(payload: tuple) -> list:
         async_http, AMOUNT_OF_THREADS, configuration
     )
 
-    loop = asyncio.get_event_loop()
-
     # The class is instantiated here because the payload contain the
     # relevant notifications settings
     if notifications_configuration:
@@ -250,12 +242,13 @@ def execute(payload: tuple) -> list:
     amount_scanned = 0
 
     batch_size = SITES_PER_THREAD * AMOUNT_OF_THREADS
+
+    logging.debug("Adding http and https schemes to the links..")
+    domains = add_missing_schemes_to_domain_list(domains)
+    total_sites_after_schemes = len(domains)
+
     urls = merge_array_to_iterator(endpoints, domains, domains_batch_size=batch_size)
     for created_requests in urls:
-
-        # Do the links have schemes?
-        logging.debug("Adding http and https schemes to the links..")
-        created_requests = add_missing_schemes_to_domain_list(created_requests)
 
         # Which endpoints respond with status 200 on HEAD requests?
         threaded_async_http.start_bulk(created_requests, HttpRequestMethods.HEAD)
@@ -265,9 +258,7 @@ def execute(payload: tuple) -> list:
         threaded_async_http.start_bulk(
             [head[0] for head in head_responsive], HttpRequestMethods.GET
         )
-        logging.debug("We sent the GET requests")
         endpoints_content_with_ok_status = threaded_async_http.get_response()
-        logging.debug("We got the response!")
 
         # Which endpoints return data that is probably useful?
         relevant_results = [
@@ -278,11 +269,11 @@ def execute(payload: tuple) -> list:
             )  # Returned is a type (url, output)
         ]
 
-        logging.debug("Notifications..")
+        logging.debug("Sending the notifications..")
         # Send the relevant results to all of the HTTP callbacks (Slack, etc)
         if notifications_configuration:
             for url, _ in relevant_results:
-                loop.run_until_complete(notifications.run_all(url))
+                asyncio.run(notifications.run_all(url))
 
         logging.debug("Saving results..")
         # Just save the result in real time if its standalone
@@ -291,11 +282,10 @@ def execute(payload: tuple) -> list:
                 save_result(url, output)
 
         total_results = total_results + relevant_results
-        amount_scanned = amount_scanned + 100
-        logging.info("Scanned %s/%s", amount_scanned, total_sites)
+        amount_scanned = amount_scanned + len(created_requests)
+        logging.info("Scanned %s/%s", amount_scanned, total_sites_after_schemes)
 
     threaded_async_http.close()
-    loop.close()
     return total_results
 
 
