@@ -49,7 +49,7 @@ class Investigate:
             if word in content:
                 return False
 
-        logging.debug("Getting the patterns")
+        logging.debug(f"Getting the patterns for {url}")
         endpoints = {}
         matched_endpoints = []
         for row in endpoints_objects:
@@ -59,6 +59,7 @@ class Investigate:
 
         endpoint = max(matched_endpoints, key=len)
         pattern = endpoints[endpoint]
+        logging.debug(f"Pattern {pattern} for {url} was identified")
         if pattern in self.output_verifier.formats():
             logging.debug(f"Checking for pattern {pattern} in {url} content")
             result = self.output_verifier.verify(content, pattern)
