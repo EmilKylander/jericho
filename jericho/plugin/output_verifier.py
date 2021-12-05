@@ -141,7 +141,7 @@ class OutputVerifier:
 
     def _is_json(self, content: str) -> bool:
         """Private method to attempt a json parse"""
-        print(content[0])
+        print(content)
         if content[0] != "{":
             return False
 
