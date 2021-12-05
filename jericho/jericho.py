@@ -269,18 +269,21 @@ def execute(payload: tuple) -> list:
 
     urls = merge_array_to_iterator(endpoints, domains, domains_batch_size=BATCH_SIZE)
     for created_requests in urls:
-
         # Which endpoints respond with status 200 on HEAD requests?
+        logging.debug(f"Sending {len(created_requests)} HEAD requests..")
         threaded_async_http.start_bulk(created_requests, HttpRequestMethods.HEAD)
         head_responsive = threaded_async_http.get_response()
 
         # Get the content of the endpoints with the OK http responses
+        get_responsive = [head[0] for head in head_responsive]
+        logging.debug(f"Sending GET to {len(get_responsive)} domains..")
         threaded_async_http.start_bulk(
-            [head[0] for head in head_responsive], HttpRequestMethods.GET
+            get_responsive, HttpRequestMethods.GET
         )
         endpoints_content_with_ok_status = threaded_async_http.get_response()
 
         # Which endpoints return data that is probably useful?
+        logging.debug("Analyzing the responses")
         relevant_results = [
             result
             for result in endpoints_content_with_ok_status
@@ -305,6 +308,7 @@ def execute(payload: tuple) -> list:
         amount_scanned = amount_scanned + len(created_requests)
         logging.info("Scanned %s/%s", amount_scanned, total_sites_after_schemes)
 
+    logging.debug("Finished, closing..")
     threaded_async_http.close()
     return total_results
 
