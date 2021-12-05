@@ -57,7 +57,7 @@ class Investigate:
             logging.debug(2)
             endpoints[row["endpoint"]] = row["pattern"]
             logging.debug(3)
-            if row["endpoint"] in url:
+            if row["endpoint"] in url.rstrip('/'):
                 logging.debug(4)
                 matched_endpoints.append(row["endpoint"])
         logging.debug(5)
