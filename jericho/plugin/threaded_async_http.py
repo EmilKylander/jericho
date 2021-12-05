@@ -119,5 +119,5 @@ class ThreadedAsyncHTTP:
         for key, single_queue in enumerate(self.queues):
             single_queue.put(f"CLOSE-worker-{key}")
 
-        logging.info("Joining threads..")
+        logging.debug("Joining threads..")
         [t.join() for t in self.threads]

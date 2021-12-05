@@ -223,27 +223,27 @@ class OutputVerifier:
     def verify(self, content: str, pattern: str) -> bool:
         """Verify that if a string is relevant based on our pattern"""
         if pattern == PatternTypes.JSON.value:
-            logging.info("Checking if content is json")
+            logging.debug("Checking if content is json")
             return self._is_json(content)
 
         if pattern == PatternTypes.YML.value:
-            logging.info("Checking if content is yml")
+            logging.debug("Checking if content is yml")
             return self._is_yaml(content)
 
         if pattern == PatternTypes.XML.value:
-            logging.info("Checking if content is xml")
+            logging.debug("Checking if content is xml")
             return self._is_xml(content)
 
         if pattern == PatternTypes.TEXT.value:
-            logging.info("Checking if <html> does not exist in content")
+            logging.debug("Checking if <html> does not exist in content")
             return self._is_text(content)
 
         if pattern == PatternTypes.NO_SPACES.value:
-            logging.info("Checking if space does not exist in content")
+            logging.debug("Checking if space does not exist in content")
             return self._is_no_spaces(content)
 
         if pattern == PatternTypes.HTML.value:
-            logging.info("Checking if space does not exist in content")
+            logging.debug("Checking if space does not exist in content")
             return self._is_html(content)
 
         logging.error("We got a pattern that we did not expect: %s", pattern)

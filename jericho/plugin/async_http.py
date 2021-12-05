@@ -59,7 +59,7 @@ class AsyncHTTP:
 
         if settings["status"] != -1:
             if response.status == settings["status"]:
-                logging.info("Got status %s for url %s", response.status, url)
+                logging.debug("Got status %s for url %s", response.status, url)
                 return url, content
         else:
             return url, content
@@ -105,13 +105,13 @@ class AsyncHTTP:
         try:
             return await self.fetch(url, settings, session)
         except aiohttp.ClientConnectorError:
-            logging.info("Got a client timeout from url %s", url)
+            logging.debug("Got a client timeout from url %s", url)
         except asyncio.TimeoutError:
-            logging.info("Got a timeout from url %s", url)
+            logging.debug("Got a timeout from url %s", url)
         except aiohttp.ClientConnectorSSLError:
-            logging.info("Got a SSL connection error on url %s", url)
+            logging.debug("Got a SSL connection error on url %s", url)
         except aiohttp.ClientOSError as err:
-            logging.info(
+            logging.debug(
                 "Got client OS error on %s - most likely client reset by peer: %s",
                 url,
                 err,
@@ -123,9 +123,9 @@ class AsyncHTTP:
                 traceback.format_exc(),
             )
         except aiohttp.ServerDisconnectedError:
-            logging.info("The server disconnected us when connecting to %s", url)
+            logging.debug("The server disconnected us when connecting to %s", url)
         except aiohttp.ClientPayloadError:
-            logging.info(
+            logging.debug(
                 "Got the error that the response payload is not completed on url %s",
                 url,
             )

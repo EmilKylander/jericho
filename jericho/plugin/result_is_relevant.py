@@ -86,7 +86,7 @@ class ResultRelevant:
         # Check how much the result content and the 404 content differ in percentage
         logging.debug(f"Anayzing the text difference for url {url}")
         result_and_404_content_procent_diff = self.diff.check(output, cache_content)
-        logging.info(
+        logging.debug(
             "We analyzed the text difference between endpoint %s and a 404 page. Difference: %s%%",
             url,
             result_and_404_content_procent_diff,
@@ -98,7 +98,7 @@ class ResultRelevant:
         if result_and_404_content_procent_diff <= self.configuration.get(
             "max_result_and_404_percent_diff"
         ):
-            logging.info(
+            logging.debug(
                 "Skipping analyzing content for %s because the difference in content is %s%%",
                 url,
                 result_and_404_content_procent_diff,

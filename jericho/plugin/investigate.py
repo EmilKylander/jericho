@@ -40,7 +40,7 @@ class Investigate:
         logging.debug("Checking for excluded content")
         for excluded_content in self.exclude_content:
             if excluded_content == content:
-                logging.info("Found %s in %s, skipping..", excluded_content, url)
+                logging.debug("Found %s in %s, skipping..", excluded_content, url)
                 return False
 
         # Check if it contains excluded words
@@ -62,10 +62,10 @@ class Investigate:
         if pattern in self.output_verifier.formats():
             logging.debug(f"Checking for pattern {pattern} in {url} content")
             result = self.output_verifier.verify(content, pattern)
-            logging.info(
+            logging.debug(
                 "Tested if url %s is %s - evaluated to %s", url, pattern, result
             )
             return result
 
-        logging.info("Checking if pattern exist in content for url %s", url)
+        logging.debug("Checking if pattern exist in content for url %s", url)
         return pattern in content

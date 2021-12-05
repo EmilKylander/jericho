@@ -317,7 +317,7 @@ def run() -> None:
     """This initializes the business logic"""
     data = None
     if rank == 0:
-        logging.info("Getting domains from --input...")
+        logging.debug("Getting domains from --input...")
         if not os.path.exists(input):
             logging.error(f"The path {input} does not exist!")
             return None
@@ -326,7 +326,7 @@ def run() -> None:
             lines = file.readlines()
             domains_loaded = [domain.strip() for domain in lines]
 
-        logging.info("Scattering domains into %s chunks..", mpi_size)
+        logging.debug("Scattering domains into %s chunks..", mpi_size)
         rows = split_array_by(domains_loaded, mpi_size)
 
         # Get the sources notifications settings so we can send it to the replicas
@@ -338,7 +338,7 @@ def run() -> None:
             for row in rows
         ]
 
-        logging.info("Done scattering domains (%s chunks)..", len(data))
+        logging.debug("Done scattering domains (%s chunks)..", len(data))
 
     data = comm.scatter(data, root=0)
 
