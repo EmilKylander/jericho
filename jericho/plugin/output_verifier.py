@@ -225,8 +225,9 @@ class OutputVerifier:
         if self._is_html(content):
             return PatternTypes.HTML.value
 
-        logging.debug("Checking if content is JSON")
-        print("Content:" + content)
+        logging.debug("Checking if content is JSON.")
+        print("Content:" + str(content))
+        logging.debug("test")
         if self._is_json(content):
             logging.debug("Json was identified")
             return PatternTypes.JSON.value
