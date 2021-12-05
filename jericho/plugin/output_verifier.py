@@ -141,7 +141,6 @@ class OutputVerifier:
 
     def _is_json(self, content: str) -> bool:
         """Private method to attempt a json parse"""
-        print("Content:" + content)
         if content[0] != "{":
             return False
 
@@ -221,15 +220,15 @@ class OutputVerifier:
         return [e.value for e in PatternTypes]
 
     def find_content_type(self, content: str) -> str:
+        if content.strip() == "":
+            logging.debug("Skipping analyzing content because it was empty")
+            return ""
+
         logging.debug("Checking if content is HTML")
         if self._is_html(content):
             return PatternTypes.HTML.value
 
-        logging.debug("Checking if content is JSON.")
-        logging.debug("Content:" + str(content))
-        logging.debug("test")
         if self._is_json(content):
-            logging.debug("Json was identified")
             return PatternTypes.JSON.value
 
         logging.debug("Checking if content is YML")
