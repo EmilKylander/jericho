@@ -37,6 +37,7 @@ from jericho.enums.http_request_methods import HttpRequestMethods
 from jericho.plugin.async_http import AsyncHTTP
 from jericho.plugin.investigate import Investigate
 from jericho.plugin.diff import Diff
+from jericho.plugin.output_verifier import OutputVerifier
 from jericho.plugin.result_is_relevant import ResultRelevant
 from jericho.plugin.notifications import Notifications
 from jericho.plugin.threaded_async_http import ThreadedAsyncHTTP
@@ -52,7 +53,7 @@ from jericho.cli import (
     get_version,
     delete_records,
     delete_endpoints,
-    upgrade
+    upgrade,
 )
 
 from jericho.enums.cluster_roles import ClusterRole
@@ -181,6 +182,7 @@ class ClusterFilter(logging.Filter):
         record.cluster = ClusterFilter.cluster
         return True
 
+
 cluster_role = parse_cluster_settings(rank, mpi_size)
 
 args = parser.parse_args()
@@ -213,6 +215,7 @@ endpoints_lookup = EndpointsLookup(session)
 investigate = Investigate()
 cache_lookup = CacheLookup(session)
 result_lookup = ResultLookup(session)
+output_verifier = OutputVerifier()
 diff = Diff()
 
 result_relevant = ResultRelevant(
@@ -221,6 +224,7 @@ result_relevant = ResultRelevant(
     cache_lookup=cache_lookup,
     async_http=async_http,
     diff=diff,
+    output_verifier=output_verifier,
     configuration=configuration,
 )
 
@@ -229,6 +233,7 @@ AMOUNT_OF_THREADS = 40 if args.batch_size is not None else args.batch_size
 
 if args.input:
     input = args.input
+
 
 def save_result(url: str, output: str) -> None:
     """This is a callback with the purpose of saving a result"""
@@ -242,7 +247,9 @@ def save_result(url: str, output: str) -> None:
 def execute(payload: tuple) -> list:
     """This is the main module which will handle all execution"""
 
-    logging.info(f"Using {BATCH_SIZE} as batch size and {AMOUNT_OF_THREADS} amount of threads")
+    logging.info(
+        f"Using {BATCH_SIZE} as batch size and {AMOUNT_OF_THREADS} amount of threads"
+    )
 
     notifications_configuration, endpoints, domains = payload
     total_results: typing.List = []
@@ -266,7 +273,7 @@ def execute(payload: tuple) -> list:
     logging.debug("Adding http and https schemes to the links..")
     domains = add_missing_schemes_to_domain_list(domains)
 
-    total_endpoints = (len(domains) * len(endpoints))
+    total_endpoints = len(domains) * len(endpoints)
 
     urls = merge_array_to_iterator(endpoints, domains, domains_batch_size=BATCH_SIZE)
     for created_requests in urls:
@@ -278,9 +285,7 @@ def execute(payload: tuple) -> list:
         # Get the content of the endpoints with the OK http responses
         get_responsive = [head[0] for head in head_responsive]
         logging.debug(f"Sending GET to {len(get_responsive)} domains..")
-        threaded_async_http.start_bulk(
-            get_responsive, HttpRequestMethods.GET
-        )
+        threaded_async_http.start_bulk(get_responsive, HttpRequestMethods.GET)
         endpoints_content_with_ok_status = threaded_async_http.get_response()
 
         # Which endpoints return data that is probably useful?

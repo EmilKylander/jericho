@@ -47,9 +47,7 @@ class ThreadedAsyncHTTP:
                 "status": HttpStatusCode.OK.value,
                 "timeout": self.configuration.get("max_head_timeout"),
                 "ignore_multimedia": self.configuration.get("ignore_multimedia"),
-                "headers": {
-                    "User-Agent": self.user_agent
-                },
+                "headers": {"User-Agent": self.user_agent},
             },
         )
 
@@ -63,9 +61,7 @@ class ThreadedAsyncHTTP:
                 "status": HttpStatusCode.OK.value,
                 "timeout": self.configuration.get("max_get_timeout"),
                 "ignore_multimedia": self.configuration.get("ignore_multimedia"),
-                "headers": {
-                    "User-Agent": self.user_agent
-                },
+                "headers": {"User-Agent": self.user_agent},
             },
         )
 

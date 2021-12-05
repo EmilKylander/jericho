@@ -53,6 +53,7 @@ def delete_endpoints(endpoints_lookup: EndpointsLookup) -> None:
     else:
         print("ERROR")
 
+
 def upgrade() -> None:
     """This function upgrades Jericho to the latest version"""
     print("Downloading source...")
@@ -61,6 +62,7 @@ def upgrade() -> None:
     os.system("cd /tmp/jericho && pip3 install .")
     os.system("rm -rf /tmp/jericho")
     print("done")
+
 
 def get_version() -> typing.Any:
     print(version)

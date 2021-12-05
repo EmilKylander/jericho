@@ -1,3 +1,7 @@
+## 2021-12-05 - 0.0.14
+
+1. Added a check which compares the content type of the 404 page and the result page, only run text analysis if the content types are the same
+
 ## 2021-12-05 - 0.0.12
 
 1. Fixed a bug where replica servers used its own endpoint repository instead of the source supplied endpoints

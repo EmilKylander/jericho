@@ -28,7 +28,7 @@ class Investigate:
             "",
         ]
 
-    def run(self, url: str, content: str, endpoints_objects: typing.List) -> bool:
+    def run(self, url: str, content: str, pattern: str) -> bool:
         """
         Analyze if the content is relevant based on lack of excluded words and phrases.
         If we have content type patterns we should use it, otherwise check if the string exists
@@ -49,24 +49,7 @@ class Investigate:
             if word in content:
                 return False
 
-        logging.debug(f"Getting the patterns for {url}")
-        endpoints = {}
-        matched_endpoints = []
-        logging.debug(1)
-        for row in endpoints_objects:
-            logging.debug(2)
-            endpoints[row["endpoint"]] = row["pattern"]
-            logging.debug(3)
-            if row["endpoint"].rstrip('/') in url.rstrip('/'):
-                logging.debug(4)
-                matched_endpoints.append(row["endpoint"])
-        logging.debug(5)
-        logging.debug(matched_endpoints)
-        logging.debug(endpoints_objects)
-        endpoint = max(matched_endpoints, key=len)
-        logging.debug(6)
-        pattern = endpoints[endpoint]
-        logging.debug(f"Pattern {pattern} for {url} was identified")
+        # Check if it matches the pattern
         if pattern in self.output_verifier.formats():
             logging.debug(f"Checking for pattern {pattern} in {url} content")
             result = self.output_verifier.verify(content, pattern)

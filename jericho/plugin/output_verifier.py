@@ -134,12 +134,15 @@ standard_html_tags = [
 
 class OutputVerifier:
     """This class attempts to identify what type of document a string is"""
+
     def __init__(self):
         """Setup which HTML tags are standard"""
         self.standard_html_tags = standard_html_tags
 
     def _is_json(self, content: str) -> bool:
         """Private method to attempt a json parse"""
+        if content[0].lstrip() != "{":
+            return False
         try:
             json.loads(content)
         except json.decoder.JSONDecodeError:
@@ -219,6 +222,27 @@ class OutputVerifier:
     def formats(self):
         """Return type content types that we can match against"""
         return [e.value for e in PatternTypes]
+
+    def find_content_type(self, content: str) -> str:
+        if self._is_json(content):
+            return PatternTypes.JSON.value
+
+        if self._is_yaml(content):
+            return PatternTypes.YML.value
+
+        if self._is_xml(content):
+            return PatternTypes.XML.value
+
+        if self._is_text(content):
+            return PatternTypes.TEXT.value
+
+        if self._is_no_spaces(content):
+            return PatternTypes.NO_SAPCES.value
+
+        if self._is_html(content):
+            return PatternTypes.HTML.value
+
+        return ""
 
     def verify(self, content: str, pattern: str) -> bool:
         """Verify that if a string is relevant based on our pattern"""
