@@ -143,10 +143,6 @@ class OutputVerifier:
         """Private method to attempt a json parse"""
         if content[0].lstrip() != "{":
             return False
-        try:
-            json.loads(content)
-        except json.decoder.JSONDecodeError:
-            return False
 
         return True
 
