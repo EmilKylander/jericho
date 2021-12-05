@@ -33,7 +33,7 @@ class Investigate:
         Analyze if the content is relevant based on lack of excluded words and phrases.
         If we have content type patterns we should use it, otherwise check if the string exists
         """
-        logging.debug("Lowercasing content for url {url}")
+        logging.debug(f"Lowercasing content for url {url}")
         content = content.lower().strip()
 
         # These responses are irrelevant and come from unexpected blocks, misconfigured 404s etc
