@@ -123,7 +123,7 @@ The current types of content are:
 
 ```
 XML
-YLM
+YML
 JSON
 TEXT
 NO_SPACES
