@@ -186,7 +186,6 @@ else:
     root.setLevel(log_level)
 
 handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(log_level)
 handler.addFilter(ClusterFilter())
 handler.addFilter(RankFilter())
 
