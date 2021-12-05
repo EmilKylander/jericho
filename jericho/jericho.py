@@ -116,6 +116,12 @@ parser.add_argument(
     help="Upgrades jericho to the latest version",
 )
 
+parser.add_argument(
+    "--log-level",
+    type=str,
+    help="Set the Jericho log level. This overwrides the log level specified in configuration. Available modes: debug, info, warn, error, fatal, critical",
+)
+
 HOME = str(Path.home())
 
 if not path.exists(f"{HOME}/jericho"):
@@ -170,8 +176,14 @@ class ClusterFilter(logging.Filter):
 
 cluster_role = parse_cluster_settings(rank, mpi_size)
 
+args = parser.parse_args()
+
 root = logging.getLogger()
-root.setLevel(log_level)
+if args.log_level:
+    print(f"Using log level '{args.log_level}' from CLI")
+    root.setLevel(logger_convert(args.log_level))
+else:
+    root.setLevel(log_level)
 
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(log_level)
@@ -208,7 +220,7 @@ result_relevant = ResultRelevant(
 
 SITES_PER_THREAD = configuration.get("sites_per_thread", 20)
 AMOUNT_OF_THREADS = 40
-args = parser.parse_args()
+
 if args.threads:
     logging.info("Setting the amount of threads to %s", args.threads)
     AMOUNT_OF_THREADS = args.threads
@@ -341,26 +353,21 @@ def main() -> typing.Any:
 
     if args.import_endpoints:
         import_endpoints(session, args.import_endpoints)
-        return True
 
     if args.get_records:
         get_records(result_lookup)
-        return True
 
     if args.delete_records:
         delete_records(result_lookup)
-        return True
 
     if args.delete_endpoints:
         delete_endpoints(endpoints_lookup)
-        return True
 
     if args.upgrade:
         upgrade()
-        return True
 
     if args.version:
         get_version()
-        return True
 
-    run()
+    if args.input is not None:
+        run()
