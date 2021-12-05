@@ -32,12 +32,14 @@ class ResultRelevant:
         and if the 404 page and the result is too similar, if it is then disregard it
         """
         domain = get_domain_from_endpoint(url)
+        logging.debug(f"Running investigation on {url}")
         content_analysis = self.investigate.run(url, output)
 
         if not content_analysis:
             return False
 
         # Check if this url has been scanned before
+        logging.debug(f"Checking if {url} has been scanned before")
         result_already_exist = True if self.result_lookup.find(url) else False
         if result_already_exist:
             return False
@@ -48,6 +50,7 @@ class ResultRelevant:
         ) = self.cache_lookup.find_domain(domain)
 
         # Check if the 404 page exists in the cache, else make a real time request
+        logging.debug(f"Checking if {url} exists in cache..")
         if not domain_is_found_in_404_cache:
             logging.debug(
                 "Could not find %s in cache, sending a request..",
@@ -80,6 +83,7 @@ class ResultRelevant:
             )
 
         # Check how much the result content and the 404 content differ in percentage
+        logging.debug(f"Anayzing the text difference for url {url}")
         result_and_404_content_procent_diff = self.diff.check(output, cache_content)
         logging.info(
             "We analyzed the text difference between endpoint %s and a 404 page. Difference: %s%%",
