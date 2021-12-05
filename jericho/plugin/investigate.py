@@ -1,14 +1,14 @@
 #!/bin/python3
 import logging
+import typing
 from jericho.plugin.output_verifier import OutputVerifier
 
 
 class Investigate:
-    def __init__(self, endpoints_lookup):
+    def __init__(self):
         """Setup some default values"""
-        self.endpoints_lookup = endpoints_lookup
         self.output_verifier = OutputVerifier()
-        self.blacklisted_words = [
+        self.exclude_words = [
             "access denied",
             "not found",
             "unauthorized",
@@ -18,7 +18,7 @@ class Investigate:
             "deny_pc",
             "the requested url was rejected",
         ]
-        self.blacklisted_content = [
+        self.exclude_content = [
             "forbidden",
             "ok",
             "{}",
@@ -28,29 +28,28 @@ class Investigate:
             "",
         ]
 
-    def run(self, url: str, content: str) -> bool:
+    def run(self, url: str, content: str, endpoints_objects: typing.List) -> bool:
         """
-        Analyze if the content is relevant based on lack of blacklisted words and phrases.
+        Analyze if the content is relevant based on lack of excluded words and phrases.
         If we have content type patterns we should use it, otherwise check if the string exists
         """
         logging.debug("Lowercasing content for url {url}")
         content = content.lower().strip()
 
         # These responses are irrelevant and come from unexpected blocks, misconfigured 404s etc
-        logging.debug("Checking for blacklisted content")
-        for blacklisted_content in self.blacklisted_content:
-            if blacklisted_content == content:
-                logging.info("Found %s in %s, skipping..", blacklisted_content, url)
+        logging.debug("Checking for excluded content")
+        for excluded_content in self.exclude_content:
+            if excluded_content == content:
+                logging.info("Found %s in %s, skipping..", excluded_content, url)
                 return False
 
-        # Check if it contains blacklisted words
-        logging.debug("Checking for blacklisted words")
-        for word in self.blacklisted_words:
+        # Check if it contains excluded words
+        logging.debug("Checking for excluded words")
+        for word in self.exclude_words:
             if word in content:
                 return False
 
         logging.debug("Getting the patterns")
-        endpoints_objects = self.endpoints_lookup.get()
         endpoints = {}
         matched_endpoints = []
         for row in endpoints_objects:

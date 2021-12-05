@@ -63,9 +63,9 @@ def parse_cluster_settings(rank: int, mpi_size: int) -> ClusterRole:
         return ClusterRole.DISABLED
 
     if rank == 0:
-        return ClusterRole.MASTER
+        return ClusterRole.SOURCE
 
-    return ClusterRole.SLAVE
+    return ClusterRole.REPLICA
 
 
 def _chunks(lst: list, size: int) -> typing.Iterable:

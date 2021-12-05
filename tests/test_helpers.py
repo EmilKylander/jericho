@@ -75,12 +75,12 @@ def test_get_domain_from_endpoint():
     assert get_domain_from_endpoint("https://google.com/asd") == "https://google.com"
 
 
-def test_parse_cluster_settings_slave():
-    assert parse_cluster_settings(1, 2) == ClusterRole.SLAVE
+def test_parse_cluster_settings_replica():
+    assert parse_cluster_settings(1, 2) == ClusterRole.REPLICA
 
 
-def test_parse_cluster_settings_master():
-    assert parse_cluster_settings(0, 2) == ClusterRole.MASTER
+def test_parse_cluster_settings_source():
+    assert parse_cluster_settings(0, 2) == ClusterRole.SOURCE
 
 
 def test_parse_cluster_settings_no_role():

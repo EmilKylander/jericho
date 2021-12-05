@@ -11,7 +11,7 @@ from jericho.version import version
 
 
 def import_endpoints(session, filepath: str) -> None:
-    """This should be ran on the master server. It\'s to import endpoints to the local db"""
+    """This should be ran on the source server. It\'s to import endpoints to the local db"""
     imported = 0
     with open(filepath, encoding="utf-8") as file:
         for row in json.load(file):

@@ -210,7 +210,7 @@ root.addHandler(handler)
 
 async_http = AsyncHTTP()
 endpoints_lookup = EndpointsLookup(session)
-investigate = Investigate(endpoints_lookup)
+investigate = Investigate()
 cache_lookup = CacheLookup(session)
 result_lookup = ResultLookup(session)
 diff = Diff()
@@ -288,7 +288,7 @@ def execute(payload: tuple) -> list:
             result
             for result in endpoints_content_with_ok_status
             if result_relevant.check(
-                result[0], result[1]
+                result[0], result[1], endpoints
             )  # Returned is a type (url, output)
         ]
 
@@ -320,7 +320,7 @@ def run() -> None:
         logging.info("Getting domains from --input...")
         if not os.path.exists(input):
             logging.error(f"The path {input} does not exist!")
-            return False
+            return None
 
         with open(input, encoding="utf-8") as file:
             lines = file.readlines()
@@ -329,12 +329,12 @@ def run() -> None:
         logging.info("Scattering domains into %s chunks..", mpi_size)
         rows = split_array_by(domains_loaded, mpi_size)
 
-        # Get the masters notifications settings so we can send it to the slaves
-        master_configuration_notifications = configuration.get("notifications", {})
+        # Get the sources notifications settings so we can send it to the replicas
+        source_configuration_notifications = configuration.get("notifications", {})
 
         endpoints_from_database = endpoints_lookup.get()
         data = [
-            (master_configuration_notifications, endpoints_from_database, row)
+            (source_configuration_notifications, endpoints_from_database, row)
             for row in rows
         ]
 
@@ -346,7 +346,7 @@ def run() -> None:
 
     gathered_data = comm.gather(data, root=0)
 
-    if cluster_role != ClusterRole.MASTER:
+    if cluster_role != ClusterRole.SOURCE:
         return None
 
     for response in gathered_data:

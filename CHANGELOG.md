@@ -1,3 +1,9 @@
+## 2021-12-05 - 0.0.12
+
+1. Fixed a bug where replica servers used its own endpoint repository instead of the source supplied endpoints
+2. Changed terminology from master/slave to source/replica
+3. Changed terminology from blacklist to excluded
+
 ## 2021-12-05 - 0.0.11
 
 1. Check if the domain list exists before processing

@@ -12,11 +12,11 @@ services:
       dockerfile: tests/integration/test-cluster/Dockerfile
     depends_on:
      - apache
-     - jericho-slave
-  jericho-slave:
-    container_name: jericho-slave
+     - jericho-replica
+  jericho-replica:
+    container_name: jericho-replica
     build:
       context: ../../../
-      dockerfile: tests/integration/test-cluster/slave/Dockerfile
+      dockerfile: tests/integration/test-cluster/replica/Dockerfile
     depends_on:
      - apache

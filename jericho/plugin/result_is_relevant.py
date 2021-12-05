@@ -1,4 +1,5 @@
 import logging
+import typing
 import asyncio
 from jericho.helpers import get_domain_from_endpoint
 from jericho.plugin.investigate import Investigate
@@ -26,14 +27,14 @@ class ResultRelevant:
         self.diff = diff
         self.configuration = configuration
 
-    def check(self, url: str, output: str) -> bool:
+    def check(self, url: str, output: str, endpoints: typing.List) -> bool:
         """
         Identify if a result is relevant based if the result has been found before,
         and if the 404 page and the result is too similar, if it is then disregard it
         """
         domain = get_domain_from_endpoint(url)
         logging.debug(f"Running investigation on {url}")
-        content_analysis = self.investigate.run(url, output)
+        content_analysis = self.investigate.run(url, output, endpoints)
 
         if not content_analysis:
             return False

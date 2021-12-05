@@ -41,8 +41,7 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 diff = Diff()
-endpoints_lookup = EndpointsLookup(session)
-investigate = Investigate(endpoints_lookup)
+investigate = Investigate()
 result_lookup = ResultLookup(session)
 cache_lookup = CacheLookup(session)
 async_http = AsyncHTTP()
@@ -66,14 +65,13 @@ result_relevant_with_cache = ResultRelevant(
 )
 
 
-endpoints_lookup.save_all([{"endpoint": "/phpinfo.php", "pattern": "phpinfo()"}])
 cache_lookup.save_content("https://google.com", "not found sorry")
 
 
 def test_is_relevant_based_on_string_pattern_with_cache():
     assert (
         result_relevant_with_cache.check(
-            "https://google.com/phpinfo.php", "<title>phpinfo()</title>asdasda"
+            "https://google.com/phpinfo.php", "<title>phpinfo()</title>asdasda", [{'endpoint': '/phpinfo.php', 'pattern': 'phpinfo()'}]
         )
         is True
     )
@@ -90,7 +88,7 @@ def test_is_relevant_based_on_string_pattern_without_cache_data(monkeypatch):
     cache_lookup.delete("https://google.com")
     assert (
         result_relevant_with_cache.check(
-            "https://google.com/phpinfo.php", "<title>phpinfo()</title>asdasda"
+            "https://google.com/phpinfo.php", "<title>phpinfo()</title>asdasda", [{'endpoint': '/phpinfo.php', 'pattern': 'phpinfo()'}]
         )
         is True
     )
@@ -101,7 +99,7 @@ def test_is_relevant_based_on_string_pattern_except_if_result_exist():
     result_lookup.save("https://google.com/phpinfo.php", "aaaa")
     assert (
         result_relevant.check(
-            "https://google.com/phpinfo.php", "<title>phpinfo()</title>asdasda"
+            "https://google.com/phpinfo.php", "<title>phpinfo()</title>asdasda", [{'endpoint': '/phpinfo.php', 'pattern': 'aaaa'}]
         )
         is False
     )
@@ -109,9 +107,9 @@ def test_is_relevant_based_on_string_pattern_except_if_result_exist():
 
 def test_is_relevant_based_on_string_same_content():
     cache_lookup.delete("https://google.com")
-    cache_lookup.save_content("https://google.com", "not found sorry")
+    cache_lookup.save_content("https://google.com", "found")
     assert (
-        result_relevant.check("https://google.com/phpinfo.php", "not found sorry")
+        result_relevant.check("https://google.com/phpinfo.php", "not found sorry", [{'endpoint': '/phpinfo.php', 'pattern': 'found'}])
         is False
     )
 
@@ -119,9 +117,8 @@ def test_is_relevant_based_on_string_same_content():
 def test_is_relevant_based_on_string_same_content_type():
     cache_lookup.delete("https://google.com")
     cache_lookup.save_content("https://google.com", "not found sorry")
-    endpoints_lookup.save_all([{"endpoint": "/package.json", "pattern": "JSON"}])
 
     assert (
-        result_relevant.check("https://google.com/package.json", '{"test": "testing"}')
+        result_relevant.check("https://google.com/package.json", '{"test": "testing"}', [{'endpoint': '/package.json', 'pattern': 'JSON'}])
         is True
     )
