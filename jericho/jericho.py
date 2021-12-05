@@ -265,7 +265,8 @@ def execute(payload: tuple) -> list:
 
     logging.debug("Adding http and https schemes to the links..")
     domains = add_missing_schemes_to_domain_list(domains)
-    total_sites_after_schemes = len(domains)
+
+    total_endpoints = (len(domains) * len(endpoints))
 
     urls = merge_array_to_iterator(endpoints, domains, domains_batch_size=BATCH_SIZE)
     for created_requests in urls:
@@ -306,7 +307,7 @@ def execute(payload: tuple) -> list:
 
         total_results = total_results + relevant_results
         amount_scanned = amount_scanned + len(created_requests)
-        logging.info("Scanned %s/%s", amount_scanned, total_sites_after_schemes)
+        logging.info("Scanned %s/%s", amount_scanned, total_endpoints)
 
     logging.debug("Finished, closing..")
     threaded_async_http.close()
