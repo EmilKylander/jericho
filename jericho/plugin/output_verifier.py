@@ -224,21 +224,27 @@ class OutputVerifier:
         return [e.value for e in PatternTypes]
 
     def find_content_type(self, content: str) -> str:
+        logging.debug("Checking if content is JSON")
         if self._is_json(content):
             return PatternTypes.JSON.value
 
+        logging.debug("Checking if content is YML")
         if self._is_yaml(content):
             return PatternTypes.YML.value
 
+        logging.debug("Checking if content is XML")
         if self._is_xml(content):
             return PatternTypes.XML.value
 
+        logging.debug("Checking if content is TEXT")
         if self._is_text(content):
             return PatternTypes.TEXT.value
 
+        logging.debug("Checking if content is NO_SPACES")
         if self._is_no_spaces(content):
-            return PatternTypes.NO_SAPCES.value
+            return PatternTypes.NO_SPACES.value
 
+        logging.debug("Checking if content is HTML")
         if self._is_html(content):
             return PatternTypes.HTML.value
 
