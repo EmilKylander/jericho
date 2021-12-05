@@ -62,6 +62,7 @@ class Investigate:
                 matched_endpoints.append(row["endpoint"])
         logging.debug(5)
         logging.debug(matched_endpoints)
+        logging.debug(endpoints_objects)
         endpoint = max(matched_endpoints, key=len)
         logging.debug(6)
         pattern = endpoints[endpoint]
