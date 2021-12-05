@@ -52,12 +52,17 @@ class Investigate:
         logging.debug(f"Getting the patterns for {url}")
         endpoints = {}
         matched_endpoints = []
+        logging.debug(1)
         for row in endpoints_objects:
+            logging.debug(2)
             endpoints[row["endpoint"]] = row["pattern"]
+            logging.debug(3)
             if row["endpoint"] in url:
+                logging.debug(4)
                 matched_endpoints.append(row["endpoint"])
-
+        logging.debug(5)
         endpoint = max(matched_endpoints, key=len)
+        logging.debug(6)
         pattern = endpoints[endpoint]
         logging.debug(f"Pattern {pattern} for {url} was identified")
         if pattern in self.output_verifier.formats():
