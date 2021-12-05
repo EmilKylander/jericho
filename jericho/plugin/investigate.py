@@ -33,19 +33,23 @@ class Investigate:
         Analyze if the content is relevant based on lack of blacklisted words and phrases.
         If we have content type patterns we should use it, otherwise check if the string exists
         """
+        logging.debug("Lowercasing content for url {url}")
         content = content.lower().strip()
 
         # These responses are irrelevant and come from unexpected blocks, misconfigured 404s etc
+        logging.debug("Checking for blacklisted content")
         for blacklisted_content in self.blacklisted_content:
             if blacklisted_content == content:
                 logging.info("Found %s in %s, skipping..", blacklisted_content, url)
                 return False
 
         # Check if it contains blacklisted words
+        logging.debug("Checking for blacklisted words")
         for word in self.blacklisted_words:
             if word in content:
                 return False
 
+        logging.debug("Getting the patterns")
         endpoints_objects = self.endpoints_lookup.get()
         endpoints = {}
         matched_endpoints = []
@@ -57,6 +61,7 @@ class Investigate:
         endpoint = max(matched_endpoints, key=len)
         pattern = endpoints[endpoint]
         if pattern in self.output_verifier.formats():
+            logging.debug(f"Checking for pattern {pattern} in {url} content")
             result = self.output_verifier.verify(content, pattern)
             logging.info(
                 "Tested if url %s is %s - evaluated to %s", url, pattern, result
