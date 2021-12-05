@@ -31,6 +31,8 @@ import argparse
 import sqlalchemy
 from mpi4py import MPI
 from sqlalchemy.orm import sessionmaker
+from typing import Final
+
 from jericho.enums.http_request_methods import HttpRequestMethods
 
 from jericho.plugin.async_http import AsyncHTTP
@@ -95,7 +97,7 @@ parser.add_argument(
 parser.add_argument(
     "--threads",
     type=int,
-    help="Set the amount of threads",
+    help="Set the amount of threads. Default: 40",
 )
 
 parser.add_argument(
@@ -119,10 +121,16 @@ parser.add_argument(
 parser.add_argument(
     "--log-level",
     type=str,
-    help="Set the Jericho log level. This overwrides the log level specified in configuration. Available modes: debug, info, warn, error, fatal, critical",
+    help="Set the Jericho log level. This overwrides the log level specified in configuration. Available modes: debug, info, warn, error, fatal, critical. Default: info",
 )
 
-HOME = str(Path.home())
+parser.add_argument(
+    "--batch-size",
+    action="store_true",
+    help="The size of the batch of domains that is sent simultaneously in an even loop per thread. Default 100",
+)
+
+HOME: Final = str(Path.home())
 
 if not path.exists(f"{HOME}/jericho"):
     logging.info("Creating a jericho directory in %s", HOME)
@@ -217,16 +225,11 @@ result_relevant = ResultRelevant(
     configuration=configuration,
 )
 
-SITES_PER_THREAD = configuration.get("sites_per_thread", 20)
-AMOUNT_OF_THREADS = 40
-
-if args.threads:
-    logging.info("Setting the amount of threads to %s", args.threads)
-    AMOUNT_OF_THREADS = args.threads
+BATCH_SIZE: Final = 100 if args.batch_size is not None else args.batch_size
+AMOUNT_OF_THREADS: Final = 40 if args.batch_size is not None else args.batch_size
 
 if args.input:
     input = args.input
-
 
 def save_result(url: str, output: str) -> None:
     """This is a callback with the purpose of saving a result"""
@@ -239,6 +242,8 @@ def save_result(url: str, output: str) -> None:
 
 def execute(payload: tuple) -> list:
     """This is the main module which will handle all execution"""
+
+    logging.info(f"Using {BATCH_SIZE} as batch size and {AMOUNT_OF_THREADS} amount of threads")
 
     notifications_configuration, endpoints, domains = payload
     total_results: typing.List = []
@@ -259,13 +264,11 @@ def execute(payload: tuple) -> list:
     logging.debug("Got %s amount of domains", total_sites)
     amount_scanned = 0
 
-    batch_size = SITES_PER_THREAD * AMOUNT_OF_THREADS
-
     logging.debug("Adding http and https schemes to the links..")
     domains = add_missing_schemes_to_domain_list(domains)
     total_sites_after_schemes = len(domains)
 
-    urls = merge_array_to_iterator(endpoints, domains, domains_batch_size=batch_size)
+    urls = merge_array_to_iterator(endpoints, domains, domains_batch_size=BATCH_SIZE)
     for created_requests in urls:
 
         # Which endpoints respond with status 200 on HEAD requests?
@@ -312,6 +315,10 @@ def run() -> None:
     data = None
     if rank == 0:
         logging.info("Getting domains from --input...")
+        if not os.path.exists(input):
+            logging.error(f"The path {input} does not exist!")
+            return False
+
         with open(input, encoding="utf-8") as file:
             lines = file.readlines()
             domains_loaded = [domain.strip() for domain in lines]

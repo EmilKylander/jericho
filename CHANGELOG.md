@@ -1,12 +1,19 @@
-## 2021-12-05 0.0.10
+## 2021-12-05 - 0.0.11
+
+1. Check if the domain list exists before processing
+2. Fixed a bug where the batch size was too large
+3. Added a new CLI argument where you can specify the domain batch size
+4. Added Final through typing to better keep track of "constants" which can be changed dynamically in Python
+
+## 2021-12-05 - 0.0.10
 
 1. Added log level override through CLI
 
-## 2021-12-05 0.0.9
+## 2021-12-05 - 0.0.9
 
 1. Added automatic upgrade through CLI
 
-## 2021-12-03 0.0.8
+## 2021-12-03 - 0.0.8
 
 1. Added asyncio.run instead of run_until_complete
 2. Fixed Scanned() log count
