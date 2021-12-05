@@ -25,12 +25,12 @@ class ThreadedAsyncHTTP:
 
         self.finish_queue: queue.Queue = queue.Queue()
 
-        for workerID in range(num_threads):
+        for worker_id in range(num_threads):
             thread_queue: queue.Queue = queue.Queue()
             self.queues.append(thread_queue)
             thread = threading.Thread(
                 target=self._send,
-                name=f"worker-{workerID}",
+                name=f"worker-{worker_id}",
                 args=(thread_queue, self.finish_queue),
             )
             self.threads.append(thread)
