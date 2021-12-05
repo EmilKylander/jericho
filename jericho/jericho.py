@@ -31,7 +31,6 @@ import argparse
 import sqlalchemy
 from mpi4py import MPI
 from sqlalchemy.orm import sessionmaker
-from typing import Final
 
 from jericho.enums.http_request_methods import HttpRequestMethods
 
@@ -130,7 +129,7 @@ parser.add_argument(
     help="The size of the batch of domains that is sent simultaneously in an even loop per thread. Default 100",
 )
 
-HOME: Final = str(Path.home())
+HOME = str(Path.home())
 
 if not path.exists(f"{HOME}/jericho"):
     logging.info("Creating a jericho directory in %s", HOME)
@@ -225,8 +224,8 @@ result_relevant = ResultRelevant(
     configuration=configuration,
 )
 
-BATCH_SIZE: Final = 100 if args.batch_size is not None else args.batch_size
-AMOUNT_OF_THREADS: Final = 40 if args.batch_size is not None else args.batch_size
+BATCH_SIZE = 100 if args.batch_size is not None else args.batch_size
+AMOUNT_OF_THREADS = 40 if args.batch_size is not None else args.batch_size
 
 if args.input:
     input = args.input
