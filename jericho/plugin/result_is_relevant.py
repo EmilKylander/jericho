@@ -105,4 +105,7 @@ class ResultRelevant:
             )
             result_and_404_too_different = True
 
+        if not result_and_404_too_different:
+            logging.info(f"Found endpoint {url}")
+
         return not result_and_404_too_different
