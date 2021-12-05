@@ -51,6 +51,7 @@ from jericho.cli import (
     get_version,
     delete_records,
     delete_endpoints,
+    upgrade
 )
 
 from jericho.enums.cluster_roles import ClusterRole
@@ -107,6 +108,12 @@ parser.add_argument(
     "--version",
     action="store_true",
     help="Get the Jericho version",
+)
+
+parser.add_argument(
+    "--upgrade",
+    action="store_true",
+    help="Upgrades jericho to the latest version",
 )
 
 HOME = str(Path.home())
@@ -346,6 +353,10 @@ def main() -> typing.Any:
 
     if args.delete_endpoints:
         delete_endpoints(endpoints_lookup)
+        return True
+
+    if args.upgrade:
+        upgrade()
         return True
 
     if args.version:

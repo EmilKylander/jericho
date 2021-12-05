@@ -1,7 +1,7 @@
+import os
 import typing
 import json
 import logging
-import asyncio
 from aiohttp import ClientSession
 
 from jericho.models import JerichoEndpoints
@@ -53,6 +53,14 @@ def delete_endpoints(endpoints_lookup: EndpointsLookup) -> None:
     else:
         print("ERROR")
 
+def upgrade() -> None:
+    """This function upgrades Jericho to the latest version"""
+    print("Downloading source...")
+    os.system("git clone https://github.com/EmilKylander/jericho /tmp/jericho")
+    print("Installing")
+    os.system("cd /tmp/jericho && pip3 install .")
+    os.system("rm -rf /tmp/jericho")
+    print("done")
 
 def get_version() -> typing.Any:
     print(version)
