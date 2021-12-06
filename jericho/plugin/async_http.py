@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import traceback
 import typing
 from aiohttp import ClientSession
 import aiohttp.client_exceptions
@@ -116,11 +115,11 @@ class AsyncHTTP:
                 url,
                 err,
             )
-        except aiohttp.ClientResponseError:
+        except aiohttp.ClientResponseError as err:
             logging.warning(
-                "Got a client response error on url %s - Full stack trace: %s",
+                "Got a client response error on url %s - Eror: %s",
                 url,
-                traceback.format_exc(),
+                err
             )
         except aiohttp.ServerDisconnectedError:
             logging.debug("The server disconnected us when connecting to %s", url)

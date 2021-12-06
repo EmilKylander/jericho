@@ -51,7 +51,7 @@ class Investigate:
 
         # Check for text string as pattern
         if pattern not in self.output_verifier.formats():
-            return pattern in content
+            return pattern.lower() in content
 
         # Check if it matches the pattern
         if pattern in self.output_verifier.formats():
