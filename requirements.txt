@@ -12,3 +12,4 @@ async-timeout
 validate_html
 html2text
 cchardet
+lxml

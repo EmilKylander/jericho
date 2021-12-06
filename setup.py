@@ -25,7 +25,8 @@ setup(
         "async-http",
         "validate_email",
         "html2text",
-        "cchardet"
+        "cchardet",
+        "lxml"
     ],
     # needs to be installed along with your package. Eg: 'caer'
     keywords=["python", "mpi", "cluster", "security"],
