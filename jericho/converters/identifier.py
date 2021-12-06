@@ -11,6 +11,7 @@ import urllib.parse
 
 class Identifier:
     def _get_text(self, url: str, site_html: str) -> str:
+        logging.deug("Getting the raw text")
         try:
             h = html2text.HTML2Text()
             h.ignore_links = True
@@ -29,6 +30,7 @@ class Identifier:
             return ""
 
     def _get_description(self, url: str, site_html: str) -> str:
+        logging.debug("Getting the description")
         soup = BeautifulSoup(site_html, "html5lib")
         description = soup.find("meta", attrs={"name": "description"})
 
@@ -46,6 +48,7 @@ class Identifier:
             return ""
 
     def _get_contact_info(self, html: str) -> dict:
+        logging.debug("Getting the contact info")
         soup = BeautifulSoup(html, "html5lib")
 
         links = soup.find_all("a")
@@ -71,6 +74,7 @@ class Identifier:
         return {"phones": list(set(phones)), "emails": list(set(emails))}
 
     def _get_title(self, site_html: str) -> str:
+        logging.debug("Getting the title")
         title = ""
         pat = re.compile("<title>(.*?)<\/title>")
 
@@ -81,6 +85,7 @@ class Identifier:
         return title
 
     def _get_google_tracking_code(self, html: str) -> str:
+        logging.debug("Getting the google analytics code")
         tracking_code = re.findall(r"ga\('create', '(.*)', 'auto'\);", html)
         if tracking_code:
             return tracking_code[0]
@@ -92,6 +97,7 @@ class Identifier:
         return ""
 
     def _get_domains(self, html: str) -> typing.List[str]:
+        logging.debug("Getting the domains")
         soup = BeautifulSoup(html, "lxml")
         links = [a.get("href") for a in soup.find_all("a", href=True)]
         domains = []
