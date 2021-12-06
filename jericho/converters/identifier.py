@@ -7,7 +7,7 @@ import html
 from bs4 import BeautifulSoup
 from validate_email import validate_email
 import urllib.parse
-
+import cchardet
 
 class Identifier:
     def _get_text(self, url: str, site_html: str) -> str:

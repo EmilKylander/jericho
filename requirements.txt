@@ -11,3 +11,4 @@ pytest-asyncio
 async-timeout
 validate_html
 html2text
+cchardet

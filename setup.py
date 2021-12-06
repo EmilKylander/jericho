@@ -24,7 +24,8 @@ setup(
         "aioretry",
         "async-http",
         "validate_email",
-        "html2text"
+        "html2text",
+        "cchardet"
     ],
     # needs to be installed along with your package. Eg: 'caer'
     keywords=["python", "mpi", "cluster", "security"],
