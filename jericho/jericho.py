@@ -273,14 +273,15 @@ def execute(payload: tuple) -> list:
         return []
 
     total_sites = len(domains)
-    logging.debug("Got %s amount of domains", total_sites)
+    logging.info("Got %s amount of domains", total_sites)
     amount_scanned = 0
 
-    should_scan_both_schemes = True if args.scan_both_schemes is not None else False
+    should_scan_both_schemes = args.scan_both_schemes
 
     total_endpoints = len(domains) * len(endpoints)
 
     if should_scan_both_schemes:
+        logging.info("Scanning both http and https")
         total_endpoints = total_endpoints * 2
 
     urls = merge_array_to_iterator(endpoints, domains, domains_batch_size=BATCH_SIZE)

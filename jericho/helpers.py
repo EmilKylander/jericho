@@ -41,6 +41,8 @@ def add_missing_schemes_to_domain_list(domains: list, should_scan_both_schemes: 
     for domain in domains:
         if not should_scan_both_schemes:
             if "http://" in domain or "https://" in domain:
+                if not domain in new_domain_list:
+                    new_domain_list.append(domain)
                 continue
 
         domain = domain.replace("http://", "").replace("https://", "")
@@ -50,7 +52,7 @@ def add_missing_schemes_to_domain_list(domains: list, should_scan_both_schemes: 
 
         if f"http://{domain}" not in new_domain_list:
             new_domain_list.append(f"http://{domain}")
-
+    print(new_domain_list)
     return new_domain_list
 
 
