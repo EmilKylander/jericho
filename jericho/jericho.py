@@ -271,12 +271,14 @@ def execute(payload: tuple) -> list:
     amount_scanned = 0
 
     logging.debug("Adding http and https schemes to the links..")
-    domains = add_missing_schemes_to_domain_list(domains)
 
-    total_endpoints = len(domains) * len(endpoints)
+    # Doubling the amount of endpoints because of http and https
+    total_endpoints = (len(domains) * 2) * len(endpoints)
 
     urls = merge_array_to_iterator(endpoints, domains, domains_batch_size=BATCH_SIZE)
     for created_requests in urls:
+        created_requests = add_missing_schemes_to_domain_list(created_requests)
+
         # Which endpoints respond with status 200 on HEAD requests?
         logging.debug(f"Sending {len(created_requests)} HEAD requests..")
         threaded_async_http.start_bulk(created_requests, HttpRequestMethods.HEAD)
