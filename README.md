@@ -85,7 +85,8 @@ has been found. This is configurable in your configuration file.
 
 This is an example of sending a request to Slack:
 
-```notifications:
+```
+notifications:
   slack:
       type: POST
       url: https://hooks.slack.com/services/aaa/asd/123
