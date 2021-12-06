@@ -11,7 +11,7 @@ import urllib.parse
 
 class Identifier:
     def _get_text(self, url: str, site_html: str) -> str:
-        logging.deug("Getting the raw text")
+        logging.debug("Getting the raw text")
         try:
             h = html2text.HTML2Text()
             h.ignore_links = True
@@ -29,9 +29,8 @@ class Identifier:
             logging.warning(f"Could not get text from {url} because of error {err}")
             return ""
 
-    def _get_description(self, url: str, site_html: str) -> str:
+    def _get_description(self, url: str, soup: BeautifulSoup) -> str:
         logging.debug("Getting the description")
-        soup = BeautifulSoup(site_html, "html5lib")
         description = soup.find("meta", attrs={"name": "description"})
 
         if not description:
@@ -47,9 +46,8 @@ class Identifier:
             )
             return ""
 
-    def _get_contact_info(self, html: str) -> dict:
+    def _get_contact_info(self, soup: BeautifulSoup) -> dict:
         logging.debug("Getting the contact info")
-        soup = BeautifulSoup(html, "html5lib")
 
         links = soup.find_all("a")
         emails = []
@@ -96,9 +94,8 @@ class Identifier:
 
         return ""
 
-    def _get_domains(self, html: str) -> typing.List[str]:
+    def _get_domains(self, soup: BeautifulSoup) -> typing.List[str]:
         logging.debug("Getting the domains")
-        soup = BeautifulSoup(html, "lxml")
         links = [a.get("href") for a in soup.find_all("a", href=True)]
         domains = []
         for link in links:
@@ -111,8 +108,9 @@ class Identifier:
 
         return list(set(domains))
 
-    def run(self, ip: str, url: str, status: int, headers: str, html: str) -> dict:
-        contact_info = self._get_contact_info(html)
+    def run(self, ip: str, url: str, status: int, headers: str, site_html: str) -> dict:
+        soup = BeautifulSoup(site_html, "lxml")
+        contact_info = self._get_contact_info(soup)
 
         """techs = Analyze.findTech({
             'headers': headers,
@@ -125,13 +123,13 @@ class Identifier:
             "headers": headers,
             "domain": url,
             "tech": techs,
-            "domains_found": self._get_domains(html),
-            "title": self._get_title(html),
-            "description": self._get_description(url, html),
+            "domains_found": self._get_domains(soup),
+            "title": self._get_title(site_html),
+            "description": self._get_description(url, soup),
             "phones": contact_info.get("phones"),
             "emails": contact_info.get("emails"),
             "ip": ip,
-            "google_tracking_code": self._get_google_tracking_code(html),
-            "text_content": self._get_text(url, html),
-            "bytes": len(html),
+            "google_tracking_code": self._get_google_tracking_code(site_html),
+            "text_content": self._get_text(url, site_html),
+            "bytes": len(site_html),
         }
