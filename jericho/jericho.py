@@ -130,6 +130,12 @@ parser.add_argument(
     help="The size of the batch of domains that is sent simultaneously in an even loop per thread. Default 100",
 )
 
+parser.add_argument(
+    "--scan-both-schemes",
+    action="store_true",
+    help="Scan both the http and the https for the supplies domains",
+)
+
 HOME = str(Path.home())
 
 if not path.exists(f"{HOME}/jericho"):
@@ -270,14 +276,16 @@ def execute(payload: tuple) -> list:
     logging.debug("Got %s amount of domains", total_sites)
     amount_scanned = 0
 
-    logging.debug("Adding http and https schemes to the links..")
+    should_scan_both_schemes = True if args.scan_both_schemes is not None else False
 
-    # Doubling the amount of endpoints because of http and https
-    total_endpoints = (len(domains) * 2) * len(endpoints)
+    total_endpoints = len(domains) * len(endpoints)
+
+    if should_scan_both_schemes:
+        total_endpoints = total_endpoints * 2
 
     urls = merge_array_to_iterator(endpoints, domains, domains_batch_size=BATCH_SIZE)
     for created_requests in urls:
-        created_requests = add_missing_schemes_to_domain_list(created_requests)
+        created_requests = add_missing_schemes_to_domain_list(created_requests, should_scan_both_schemes)
 
         # Which endpoints respond with status 200 on HEAD requests?
         logging.debug(f"Sending {len(created_requests)} HEAD requests..")

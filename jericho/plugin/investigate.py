@@ -49,6 +49,10 @@ class Investigate:
             if word in content:
                 return False
 
+        # Check for text string as pattern
+        if pattern not in self.output_verifier.formats():
+            return pattern in content
+
         # Check if it matches the pattern
         if pattern in self.output_verifier.formats():
             logging.debug(f"Checking for pattern {pattern} in {url} content")
@@ -59,4 +63,4 @@ class Investigate:
             return result
 
         logging.debug("Checking if pattern exist in content for url %s", url)
-        return pattern in content
+        return False

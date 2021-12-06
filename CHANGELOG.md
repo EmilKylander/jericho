@@ -1,3 +1,9 @@
+# 2021-12-06 0.0.15
+
+1. Added http and https adding when its needed instead of bulk to avoid overhead
+2. Added a cli argument so http and https is added automatically to missing hosts
+3. Moved code where text strings are checked in the result content for better speed
+
 ## 2021-12-05 - 0.0.14
 
 1. Added a check which compares the content type of the 404 page and the result page, only run text analysis if the content types are the same

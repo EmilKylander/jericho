@@ -130,9 +130,8 @@ class AsyncHTTP:
                 url,
             )
         except Exception as err:
-            traceback_err = traceback.format_exc()
             logging.error(
-                "Got error for url %s: %s - Traceback: %s", url, err, traceback_err
+                "Got error for url %s - Error: %s", url, err
             )
 
         return None, None
