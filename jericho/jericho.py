@@ -317,10 +317,13 @@ def execute(payload: tuple) -> list:
         threaded_async_http.start_bulk(get_responsive, HttpRequestMethods.GET)
         endpoints_content_with_ok_status = threaded_async_http.get_response()
 
+        logging.debug("Finished with the GET requests")
+
         # We might want to get the actual data from the domains in a serialized form
         if args.converter:
             converted_results = []
             for url, html in endpoints_content_with_ok_status:
+                logging.debug(f"Running the converter on {url}")
                 result = CONVERTERS.get(args.converter).run("", url, 200, "", html)
                 logging.info(f"Parsed {url} - Title: {result['title']}")
                 converted_results.append(result)
