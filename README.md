@@ -135,7 +135,8 @@ in the previous chapter but you write "converter_notifications" instead of "noti
 
 Example:
 
-```converter_notifications:
+```
+converter_notifications:
   mywebsite:
       type: POST
       url: https://mywebsite.com/scraped_content
