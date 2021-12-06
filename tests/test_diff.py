@@ -14,6 +14,7 @@ def test_different_sentence():
 
 def test_different_html():
     diff = Diff()
+
     f = open("tests/assets/nutanix.html", "r")
     bogus = f.read()
 

@@ -31,7 +31,7 @@ sample_notification_config = yaml.safe_load(
     type: POST
     url: https://hooks.slack.com/services/sfuhfsiudfhisdu/oaisjdoiasjdoaisjd
     data:
-      text: result *url*
+      text: result *data*
     headers:
     Content-Type: application/json"""
 )
@@ -42,15 +42,15 @@ sample_notification_config_get = yaml.safe_load(
     type: GET
     url: https://hooks.slack.com/services/sfuhfsiudfhisdu/oaisjdoiasjdoaisjd
     data:
-      text: result *url*
+      text: result *data*
     headers:
     Content-Type: application/json"""
 )
 
 
-def test_replace_post_data_with_url():
+def test__replace_placeholder_var_with_data():
     notifications = Notifications(sample_notification_config)
-    res = notifications._replace_data_var_with_url(
+    res = notifications._replace_placeholder_var_with_data(
         sample_notification_config["slack"]["data"],
         "https://hooks.slack.com/services/sfuhfsiudfhisdu/oaisjdoiasjdoaisjd",
     )
@@ -69,8 +69,7 @@ def test__send_notification_get(monkeypatch):
 
     notifications = Notifications(sample_notification_config)
 
-    loop = asyncio.get_event_loop()
-    res = loop.run_until_complete(
+    res = asyncio.run(
         notifications._send_notification_get(
             sample_notification_config["slack"]["data"],
             "https://hooks.slack.com/services/sfuhfsiudfhisdu/oaisjdoiasjdoaisjd",
@@ -90,8 +89,7 @@ def test__send_notification_post(monkeypatch):
 
     notifications = Notifications(sample_notification_config)
 
-    loop = asyncio.get_event_loop()
-    res = loop.run_until_complete(
+    res = asyncio.run(
         notifications._send_notification_post(
             sample_notification_config["slack"],
             "https://hooks.slack.com/services/sfuhfsiudfhisdu/oaisjdoiasjdoaisjd",
@@ -111,8 +109,7 @@ def test_send_notification(monkeypatch):
 
     notifications = Notifications(sample_notification_config)
 
-    loop = asyncio.get_event_loop()
-    res = loop.run_until_complete(
+    res = asyncio.run(
         notifications._send_notification_post(
             sample_notification_config["slack"],
             "https://hooks.slack.com/services/sfuhfsiudfhisdu/oaisjdoiasjdoaisjd",
@@ -132,8 +129,7 @@ def test_send_notification_get(monkeypatch):
 
     notifications = Notifications(sample_notification_config_get)
 
-    loop = asyncio.get_event_loop()
-    res = loop.run_until_complete(
+    res = asyncio.run(
         notifications._send_notification(
             sample_notification_config["slack"],
             "https://hooks.slack.com/services/sfuhfsiudfhisdu/oaisjdoiasjdoaisjd",
@@ -153,8 +149,7 @@ def test_run_all(monkeypatch):
 
     notifications = Notifications(sample_notification_config_get)
 
-    loop = asyncio.get_event_loop()
-    res = loop.run_until_complete(
+    res = asyncio.run(
         notifications.run_all(
             "https://hooks.slack.com/services/sfuhfsiudfhisdu/oaisjdoiasjdoaisjd"
         )

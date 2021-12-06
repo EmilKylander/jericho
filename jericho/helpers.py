@@ -74,7 +74,7 @@ def parse_cluster_settings(rank: int, mpi_size: int) -> ClusterRole:
     return ClusterRole.REPLICA
 
 
-def _chunks(lst: list, size: int) -> typing.Iterable:
+def chunks(lst: list, size: int) -> typing.Iterable:
     """Yield successive n-sized chunks from lst."""
     if size == 0:
         yield []
@@ -90,7 +90,7 @@ def merge_array_to_iterator(
 
     if len(endpoints) > len(domains):
         for domain in domains:
-            endpoint_batches = _chunks(endpoints, domains_batch_size)
+            endpoint_batches = chunks(endpoints, domains_batch_size)
             for endpoint_batch in endpoint_batches:
                 yield [
                     f'{domain}/{endpoint.get("endpoint").lstrip("/").rstrip("/")}'
@@ -98,7 +98,7 @@ def merge_array_to_iterator(
                 ]
     else:
         for endpoint in endpoints:
-            domains_batches = _chunks(domains, domains_batch_size)
+            domains_batches = chunks(domains, domains_batch_size)
 
             for domain_batch in domains_batches:
                 yield [
@@ -112,5 +112,5 @@ def split_array_by(
 ) -> typing.List[typing.List[str]]:
     """Split a list by the num amount of chunks"""
     return [
-        chunk for chunk in _chunks(list_content, math.ceil(len(list_content) / num))
+        chunk for chunk in chunks(list_content, math.ceil(len(list_content) / num))
     ]

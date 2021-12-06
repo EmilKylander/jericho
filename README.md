@@ -17,9 +17,10 @@
 4. How to use in standalone
 5. How to use in a cluster
 6. Notifications
-7. FAQ
+7. Web scraping
+8. FAQ
    - How does it know if an endpoint exists?
-8. Development topics
+9. Development topics
    - Installing from source
    - How are you enforcing quality?
    - Unit-testing
@@ -96,10 +97,55 @@ This is an example of sending a request to Slack:
         Content-Type: application/json
 ```
 
-
 In this example you see the "*url*", this is a form of template variable that is replaced with the actual endpoint URL
 when a result is found. Another feature to look out for is the ```content-type: application/json``` header because it will
 automatically json encode the payload when it's present.
+
+## Web scraping
+
+Jericho has an experimental support for web scraping, in this mode it will not take consideration
+to the endpoints and will only send requests to the domain list.
+
+to use it run
+
+```
+jericho --input domains.txt --converter identifier
+```
+
+This will return:
+
+1. Unique domains found in the HTML
+2. Title from the <title> tag
+3. Description from the meta tag
+4. Phone numbers
+5. E-mail addresses
+6. Google Analytics code
+7. The raw text content (HTML stripped)
+8. The response size
+
+Coming soon:
+
+1. Technologies
+2. IP Address
+
+
+Currently the only way of receiving the data is by setting up a web server and make Jericho
+forward the data to an endpoint of that web server. This works exactly like the notifications
+in the previous chapter but you write "converter_notifications" instead of "notifications".
+
+Example:
+
+```converter_notifications:
+  mywebsite:
+      type: POST
+      url: https://mywebsite.com/scraped_content
+      data:
+        results: *data*
+```
+
+This example will send a JSON serialized object with all of the results for the current iteration.
+If Jericho is scanning 1,000 domains then it will split that into 10 chunks and will send 10 HTTP requests
+to your website with 100 objects.
 
 ## FAQ
 

@@ -10,13 +10,13 @@ class Notifications:
     def __init__(self, notifications_configuration):
         """Initialize the notifications"""
         self.notifications_configuration = notifications_configuration
-        self.url_replacement_string = "*url*"
+        self.url_replacement_string = "*data*"
 
-    def _replace_data_var_with_url(self, data: dict, url: str):
+    def _replace_placeholder_var_with_data(self, data: dict, url: str):
         """We should replace the url variable from the data dictionary from the configuration"""
         new_dict = {}
         for key, value in data.items():
-            new_dict[key] = value.replace("*url*", url)
+            new_dict[key] = value.replace("*data*", url)
 
         return new_dict
 
@@ -35,11 +35,11 @@ class Notifications:
             )
 
     async def _send_notification_post(
-        self, notification_config: dict, url: str
+        self, notification_config: dict, data: str
     ) -> ClientResponse:
         """Send the notification through POST HTTP method"""
-        post_data = self._replace_data_var_with_url(
-            notification_config.get("data", {}), url
+        post_data = self._replace_placeholder_var_with_data(
+            notification_config.get("data", {}), data
         )
 
         notification_headers = notification_config.get("headers") or {}
@@ -50,7 +50,7 @@ class Notifications:
         async with ClientSession() as session:
             return await session.post(
                 notification_config.get("url", "").replace(
-                    self.url_replacement_string, url
+                    self.url_replacement_string, data
                 ),
                 ssl=False,
                 allow_redirects=False,
@@ -59,16 +59,16 @@ class Notifications:
             )
 
     async def _send_notification(
-        self, notification_config: dict, url: str
+        self, notification_config: dict, data: str
     ) -> ClientResponse:
         """Decide to run GET or POST methods based on the configuration"""
         if notification_config.get("type", "").lower() == HttpRequestMethods.GET.value:
-            return await self._send_notification_get(notification_config, url)
+            return await self._send_notification_get(notification_config, data)
 
         if notification_config.get("type", "").lower() == HttpRequestMethods.POST.value:
-            return await self._send_notification_post(notification_config, url)
+            return await self._send_notification_post(notification_config, data)
 
-    async def run_all(self, url: str) -> typing.List:
+    async def run_all(self, data: str) -> typing.List:
         """Take a url and send it to all HTTP notifications url"""
         res = []
         for (
@@ -76,10 +76,10 @@ class Notifications:
             notification_config,
         ) in self.notifications_configuration.items():
             logging.info(
-                "Sending a %s notification with url %s", notification_name, url
+                "Sending a %s notification with url %s", notification_name, data
             )
             try:
-                resp = await self._send_notification(notification_config, url)
+                resp = await self._send_notification(notification_config, data)
                 res.append(resp)
                 logging.info("Sent the %s notification!", notification_name)
             except Exception as err:

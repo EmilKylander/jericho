@@ -72,8 +72,7 @@ class ResultRelevant:
                 "Could not find %s in cache, sending a request..",
                 f"{domain}/page_not_found.html",
             )
-            loop = asyncio.get_event_loop()
-            page_not_found_res = loop.run_until_complete(
+            page_not_found_res = asyncio.run(
                 self.async_http.get(
                     [f"{domain}/page_not_found.html"],
                     settings={

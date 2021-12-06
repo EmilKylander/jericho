@@ -79,7 +79,7 @@ class AsyncHTTP:
             async with session.head(
                 url,
                 ssl=False,
-                allow_redirects=False,
+                allow_redirects=True,
                 timeout=settings["timeout"],
                 headers=settings["headers"],
             ) as response:
@@ -89,7 +89,7 @@ class AsyncHTTP:
             async with session.get(
                 url,
                 ssl=False,
-                allow_redirects=False,
+                allow_redirects=True,
                 timeout=settings["timeout"],
                 headers=settings.get("headers", {}),
             ) as response:

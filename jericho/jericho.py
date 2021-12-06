@@ -20,6 +20,7 @@ This file is suppose to be run from the command line.
 """
 
 #!/bin/python3
+import json
 import typing
 import sys
 import logging
@@ -44,6 +45,7 @@ from jericho.plugin.threaded_async_http import ThreadedAsyncHTTP
 from jericho.repositories.cache_lookup import CacheLookup
 from jericho.repositories.result_lookup import ResultLookup
 from jericho.repositories.endpoints_lookup import EndpointsLookup
+from jericho.converters.identifier import Identifier
 
 from jericho.models import Base
 
@@ -65,6 +67,7 @@ from jericho.helpers import (
     merge_array_to_iterator,
     parse_cluster_settings,
     split_array_by,
+    chunks
 )
 
 # Instantiate the parser
@@ -135,6 +138,13 @@ parser.add_argument(
     action="store_true",
     help="Scan both the http and the https for the supplies domains",
 )
+
+parser.add_argument(
+    "--converter",
+    type=str,
+    help="You can also use Jericho as a form of web scraper, you need to specify a converter. Currently 'identifier' is available, read the documentation for more information. When this flag is set no endpoints will be appended or processed.",
+)
+
 
 HOME = str(Path.home())
 
@@ -236,7 +246,9 @@ result_relevant = ResultRelevant(
 
 BATCH_SIZE = 100 if args.batch_size is not None else args.batch_size
 AMOUNT_OF_THREADS = 40 if args.batch_size is not None else args.batch_size
-
+CONVERTERS = {
+    'identifier': Identifier()
+}
 if args.input:
     input = args.input
 
@@ -257,7 +269,9 @@ def execute(payload: tuple) -> list:
         f"Using {BATCH_SIZE} as batch size and {AMOUNT_OF_THREADS} amount of threads"
     )
 
-    notifications_configuration, endpoints, domains = payload
+    configuration, endpoints, domains = payload
+    notifications_configuration = configuration.get("notifications")
+    converter_notifications = configuration.get("converter_notifications")
     total_results: typing.List = []
     threaded_async_http = ThreadedAsyncHTTP(
         async_http, AMOUNT_OF_THREADS, configuration
@@ -284,7 +298,11 @@ def execute(payload: tuple) -> list:
         logging.info("Scanning both http and https")
         total_endpoints = total_endpoints * 2
 
-    urls = merge_array_to_iterator(endpoints, domains, domains_batch_size=BATCH_SIZE)
+    if args.converter:
+        urls = chunks(domains, BATCH_SIZE)
+    else:
+        urls = merge_array_to_iterator(endpoints, domains, domains_batch_size=BATCH_SIZE)
+
     for created_requests in urls:
         created_requests = add_missing_schemes_to_domain_list(created_requests, should_scan_both_schemes)
 
@@ -298,6 +316,24 @@ def execute(payload: tuple) -> list:
         logging.debug(f"Sending GET to {len(get_responsive)} domains..")
         threaded_async_http.start_bulk(get_responsive, HttpRequestMethods.GET)
         endpoints_content_with_ok_status = threaded_async_http.get_response()
+
+        # We might want to get the actual data from the domains in a serialized form
+        if args.converter:
+            converted_results = []
+            for url, html in endpoints_content_with_ok_status:
+                result = CONVERTERS.get(args.converter).run("", url, 200, "", html)
+                logging.info(f"Parsed {url} - Title: {result['title']}")
+                converted_results.append(result)
+
+            # Send the notifications for the converter
+            if converter_notifications:
+                converter_notifications = Notifications(converter_notifications)
+                asyncio.run(converter_notifications.run_all(json.dumps(converted_results)))
+
+                
+
+            # The rest of the function analyzes endpoints, there's no point to keep it running
+            continue
 
         # Which endpoints return data that is probably useful?
         logging.debug("Analyzing the responses")
@@ -347,11 +383,10 @@ def run() -> None:
         rows = split_array_by(domains_loaded, mpi_size)
 
         # Get the sources notifications settings so we can send it to the replicas
-        source_configuration_notifications = configuration.get("notifications", {})
 
         endpoints_from_database = endpoints_lookup.get()
         data = [
-            (source_configuration_notifications, endpoints_from_database, row)
+            (configuration, endpoints_from_database, row)
             for row in rows
         ]
 

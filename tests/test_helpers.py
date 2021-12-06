@@ -8,7 +8,7 @@ from jericho.helpers import (
     get_domain_from_endpoint,
     parse_cluster_settings,
     merge_array_to_iterator,
-    _chunks,
+    chunks,
     split_array_by,
 )
 
@@ -127,8 +127,8 @@ def test_merge_array_to_iterator():
     assert i == 4
 
 
-def test__chunks():
-    chunks_iter = _chunks([1, 2, 3, 4], 2)
+def test_chunks():
+    chunks_iter = chunks([1, 2, 3, 4], 2)
     first = last = next(chunks_iter, "defaultvalue")
     for last in chunks_iter:
         pass

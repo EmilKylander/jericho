@@ -9,3 +9,5 @@ aioretry
 pytest
 pytest-asyncio
 async-timeout
+validate_html
+html2text

@@ -1,3 +1,8 @@
+# 2021-12-06 0.1.15
+
+1. Added experimental support for web scraping
+2. Replaced loop.run_until_complete with asyncio.run in the tests
+
 # 2021-12-06 0.0.15
 
 1. Added http and https adding when its needed instead of bulk to avoid overhead

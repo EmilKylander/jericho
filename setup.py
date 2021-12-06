@@ -23,6 +23,8 @@ setup(
         "bs4",
         "aioretry",
         "async-http",
+        "validate_email",
+        "html2text"
     ],
     # needs to be installed along with your package. Eg: 'caer'
     keywords=["python", "mpi", "cluster", "security"],
