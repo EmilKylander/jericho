@@ -304,6 +304,7 @@ def execute(payload: tuple) -> list:
         urls = merge_array_to_iterator(endpoints, domains, domains_batch_size=BATCH_SIZE)
 
     for created_requests in urls:
+        logging.debug("Adding HTTP schemes if missing")
         created_requests = add_missing_schemes_to_domain_list(created_requests, should_scan_both_schemes)
 
         # Which endpoints respond with status 200 on HEAD requests?
@@ -329,10 +330,12 @@ def execute(payload: tuple) -> list:
                 converted_results.append(result)
 
             # Send the notifications for the converter
+            logging.debug("Sending notifications")
             if converter_notifications:
                 converter_notifications = Notifications(converter_notifications)
                 asyncio.run(converter_notifications.run_all(json.dumps(converted_results)))
                 
+            logging.debug("Sent all notifications")
 
             # The rest of the function analyzes endpoints, there's no point to keep it running
             continue
