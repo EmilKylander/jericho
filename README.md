@@ -123,11 +123,12 @@ This will return:
 6. Google Analytics code
 7. The raw text content (HTML stripped)
 8. The response size
+9. Technologies
+
 
 Coming soon:
 
-1. Technologies
-2. IP Address
+1. IP Address
 
 
 Currently the only way of receiving the data is by setting up a web server and make Jericho
