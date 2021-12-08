@@ -282,6 +282,10 @@ def execute(payload: tuple) -> list:
     if notifications_configuration:
         notifications = Notifications(notifications_configuration)
 
+    if converter_notifications:
+        converter_notifications = Notifications(converter_notifications)
+
+
     if len(endpoints) == 0:
         logging.error("No endpoint patterns was supplied")
         return []
@@ -332,7 +336,6 @@ def execute(payload: tuple) -> list:
             # Send the notifications for the converter
             logging.debug("Sending notifications")
             if converter_notifications:
-                converter_notifications = Notifications(converter_notifications)
                 asyncio.run(converter_notifications.run_all(json.dumps(converted_results)))
                 
             logging.debug("Sent all notifications")
