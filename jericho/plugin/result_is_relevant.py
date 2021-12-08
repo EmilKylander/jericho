@@ -89,7 +89,7 @@ class ResultRelevant:
                 )
                 return False
 
-            _, cache_content = page_not_found_res[0]
+            _, cache_content, _ = page_not_found_res[0]
 
             self.cache_lookup.save_content(domain, cache_content)
         else:

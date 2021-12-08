@@ -87,6 +87,7 @@ def test_is_relevant_based_on_string_pattern_without_cache_data(monkeypatch):
     def mock_client_get(self, params, ssl, allow_redirects, timeout, headers):
         mock_response = AsyncMock()
         mock_response.status = 200
+        mock_response.headers = {"content-type": "text/html"}
         return mock_response
 
     monkeypatch.setattr("aiohttp.ClientSession.get", mock_client_get)

@@ -35,6 +35,8 @@ class AsyncHTTP:
         """
         logging.debug("Got status %s for url %s", response.status, url)
 
+        headers = "\n".join([f"{key}: {val}" for key, val in response.headers.items()])
+
         content = ""
         if settings.get("method") != HttpRequestMethods.HEAD.value:
             content = await response.text()
@@ -48,22 +50,22 @@ class AsyncHTTP:
                     "Not gonna return the response from %s because it contains bad content type",
                     url,
                 )
-                return None, None
+                return None, None, None
 
         # Huge content types are problematic, it consumes memory - especially if we're trying to guess its content and put it in parsers
         # This is why we're gonna return None if it exceeds a certain configurable amount
         content_length = len(content)
         if content_length >= self.max_content_length:
-            return None, None
+            return None, None, None
 
         if settings["status"] != -1:
             if response.status == settings["status"]:
                 logging.debug("Got status %s for url %s", response.status, url)
-                return url, content
+                return url, content, headers
         else:
-            return url, content
+            return url, content, headers
 
-        return None, None
+        return None, None, None
 
     async def fetch(self, url: str, settings: dict, session: ClientSession) -> tuple:
         """Calls different http methods based on which method was passed to async_http"""
@@ -72,7 +74,7 @@ class AsyncHTTP:
             logging.critical(
                 "We got a None entry in fetch(), sanitize the list before supplying."
             )
-            return None, None
+            return None, None, None
 
         logging.debug("Sending a request to %s with method %s", url, settings["method"])
         if settings["method"] == HttpRequestMethods.HEAD.value:
@@ -95,7 +97,7 @@ class AsyncHTTP:
             ) as response:
                 return await self.process_response(url, settings, response)
 
-        return None, None
+        return None, None, None
 
     async def bound_fetch(
         self, url: str, settings: dict, session: ClientSession
@@ -133,7 +135,7 @@ class AsyncHTTP:
                 "Got error for url %s - Error: %s", url, err
             )
 
-        return None, None
+        return None, None, None
 
     def _parse_settings(self, settings: dict) -> dict:
         """Parse the settings given to async_http"""

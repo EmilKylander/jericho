@@ -322,9 +322,9 @@ def execute(payload: tuple) -> list:
         # We might want to get the actual data from the domains in a serialized form
         if args.converter:
             converted_results = []
-            for url, html in endpoints_content_with_ok_status:
+            for url, html, headers in endpoints_content_with_ok_status:
                 logging.debug(f"Running the converter on {url}")
-                result = CONVERTERS.get(args.converter).run("", url, 200, "", html)
+                result = CONVERTERS.get(args.converter).run("", url, 200, headers, html)
                 logging.info(f"Parsed {url} - Title: {result['title']}")
                 converted_results.append(result)
 
@@ -332,7 +332,6 @@ def execute(payload: tuple) -> list:
             if converter_notifications:
                 converter_notifications = Notifications(converter_notifications)
                 asyncio.run(converter_notifications.run_all(json.dumps(converted_results)))
-
                 
 
             # The rest of the function analyzes endpoints, there's no point to keep it running
@@ -357,7 +356,7 @@ def execute(payload: tuple) -> list:
         logging.debug("Saving results..")
         # Just save the result in real time if its standalone
         if cluster_role == ClusterRole.DISABLED:
-            for url, output in relevant_results:
+            for url, output, _ in relevant_results:
                 save_result(url, output)
 
         total_results = total_results + relevant_results
@@ -408,7 +407,7 @@ def run() -> None:
         if not response:
             continue
 
-        for url, output in response:
+        for url, output, _ in response:
             save_result(url, output)
 
 

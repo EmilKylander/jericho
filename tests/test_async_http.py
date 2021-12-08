@@ -3,15 +3,9 @@ import pytest
 
 TEST_URL = "https://google.com"
 
-
-class MockNormalHeaders:
-    def get(self, _):
-        return "text/html"
-
-
 class AsyncMock:
     def __init__(self):
-        self.headers = MockNormalHeaders()
+        self.headers = {"content-type": "text/html"}
 
     async def __aenter__(self):
         return self
@@ -22,15 +16,12 @@ class AsyncMock:
     async def text(self):
         return "im alive!"
 
-
-class MockHeaders:
-    def get(self, _):
-        return "image/gif"
-
+    async def headers(self):
+        return {"header": "value"}
 
 class AsyncMockImage:
     def __init__(self):
-        self.headers = MockHeaders()
+        self.headers = {"content-type": "image/gif"}
 
     async def __aenter__(self):
         return self
@@ -40,6 +31,9 @@ class AsyncMockImage:
 
     async def text(self):
         return "im alive!"
+
+    async def headers(self):
+        return {"header": "value"}
 
 
 @pytest.mark.asyncio
@@ -61,7 +55,7 @@ async def test__run_with_head(monkeypatch):
             },
         },
     )
-    assert resp == [(TEST_URL, "")]
+    assert resp == [(TEST_URL, "", "content-type: text/html")]
 
 
 @pytest.mark.asyncio
@@ -74,7 +68,7 @@ async def test__run_with_get(monkeypatch):
     async_http = AsyncHTTP()
     monkeypatch.setattr("aiohttp.ClientSession.get", mock_client_get)
     resp = await async_http.get([TEST_URL], settings={"status": 200, "timeout": 60})
-    assert resp == [(TEST_URL, "im alive!")]
+    assert resp == [(TEST_URL, "im alive!", "content-type: text/html")]
 
 
 @pytest.mark.asyncio

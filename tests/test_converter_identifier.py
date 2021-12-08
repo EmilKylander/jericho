@@ -9,12 +9,12 @@ async def test_check_successful_conversion():
         "https://google.com",
         200,
         "test: aaa",
-        "<b>my content here</b><title>testing</title><a href='tel:+46234234'>aa</a><a href='mailto:test@test.com'>asd</a><a href='https://yahoo.com'>asd</a><script>ga('create', 'trackingcode', 'auto');</script><meta name='description' content='desc'>",
+        "<b>my content here</b><title>testing</title><a href='tel:+46234234'>aa</a><a href='mailto:test@test.com'>asd</a><a href='https://yahoo.com'>asd</a><script>ga('create', 'trackingcode', 'auto');</script><meta name='description' content='desc'><meta name='generator' content='ametys'>",
     ) == {
         "status": 200,
         "headers": "test: aaa",
         "domain": "https://google.com",
-        "tech": [],
+        "tech": [{'plugins': '', 'technology': 'Ametys', 'theme': '', 'version': ''}],
         "domains_found": ["https://yahoo.com"],
         "title": "testing",
         "description": "desc",
@@ -23,5 +23,5 @@ async def test_check_successful_conversion():
         "ip": "123.123.132.123",
         "google_tracking_code": "trackingcode",
         "text_content": "my content here testingaaasdasd",
-        "bytes": 241,
+        "bytes": 281,
     }
