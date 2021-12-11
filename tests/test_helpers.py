@@ -70,6 +70,7 @@ def test_add_missing_schemes_to_domain_list_with_scheme_multiple():
         "http://127.0.0.1",
     ]
 
+
 def test_add_missing_schemes_to_domain_list_with_scheme_no_double():
     assert add_missing_schemes_to_domain_list(["http://127.0.0.1"]) == [
         "http://127.0.0.1",

@@ -245,7 +245,8 @@ result_relevant = ResultRelevant(
 )
 
 BATCH_SIZE = 100 if args.batch_size is not None else args.batch_size
-AMOUNT_OF_THREADS = 40 if args.batch_size is not None else args.batch_size
+AMOUNT_OF_THREADS = 40 if args.threads is not None else args.threads
+
 CONVERTERS = {
     'identifier': Identifier()
 }
@@ -342,6 +343,9 @@ def execute(payload: tuple) -> list:
 
             # The rest of the function analyzes endpoints, there's no point to keep it running
             continue
+        else:
+            #  Strip away the headers because it's only used with web scraping
+            endpoints_content_with_ok_status = [(url, content) for url, content, _ in endpoints_content_with_ok_status]
 
         # Which endpoints return data that is probably useful?
         logging.debug("Analyzing the responses")
@@ -362,7 +366,7 @@ def execute(payload: tuple) -> list:
         logging.debug("Saving results..")
         # Just save the result in real time if its standalone
         if cluster_role == ClusterRole.DISABLED:
-            for url, output, _ in relevant_results:
+            for url, output in relevant_results:
                 save_result(url, output)
 
         total_results = total_results + relevant_results
@@ -413,9 +417,8 @@ def run() -> None:
         if not response:
             continue
 
-        for url, output, _ in response:
+        for url, output in response:
             save_result(url, output)
-
 
 def main() -> typing.Any:
     """The main module"""

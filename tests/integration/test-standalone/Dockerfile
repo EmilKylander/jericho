@@ -8,5 +8,5 @@ RUN echo 'btl_base_warn_component_unused = 0' > /etc/openmpi/openmpi-mca-params.
 COPY . .
 RUN python3 setup.py install
 RUN jericho --import-endpoints tests/integration/test-standalone/endpoints.json
-CMD cd tests/integration/test-standalone && jericho --threads 10 --input host.txt && chmod +x validate.sh && ./validate.sh
+CMD cd tests/integration/test-standalone && jericho --threads 10 --input host.txt --log-level debug && chmod +x validate.sh && ./validate.sh
 

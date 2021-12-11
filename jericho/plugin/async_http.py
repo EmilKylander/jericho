@@ -35,7 +35,7 @@ class AsyncHTTP:
         """
         logging.debug("Got status %s for url %s", response.status, url)
 
-        headers = "\n".join([f"{key}: {val}" for key, val in response.headers.items()])
+        headers = response.headers
 
         content = ""
         if settings.get("method") != HttpRequestMethods.HEAD.value:

@@ -13,3 +13,4 @@ validate_html
 html2text
 cchardet
 lxml
+python-Wappalyzer==0.4.0

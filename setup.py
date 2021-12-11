@@ -26,7 +26,8 @@ setup(
         "validate_email",
         "html2text",
         "cchardet",
-        "lxml"
+        "lxml",
+        "python-Wappalyzer"
     ],
     # needs to be installed along with your package. Eg: 'caer'
     keywords=["python", "mpi", "cluster", "security"],

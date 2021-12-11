@@ -10,11 +10,15 @@ class ResultLookup:
 
     def find(self, endpoint: str) -> bool:
         """Find result by endpoint"""
-        content = (
-            self.session.query(JerichoResult)
-            .filter(JerichoResult.endpoint == endpoint)
-            .all()
-        )
+        try:
+            content = (
+                self.session.query(JerichoResult)
+                .filter(JerichoResult.endpoint == endpoint)
+                .all()
+            )
+        except Exception as err:
+            logging.warning(f"Could not search for {endpoint} because of error {err}")
+            return True
 
         return len(content) > 0
 

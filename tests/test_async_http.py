@@ -3,6 +3,7 @@ import pytest
 
 TEST_URL = "https://google.com"
 
+
 class AsyncMock:
     def __init__(self):
         self.headers = {"content-type": "text/html"}
@@ -18,6 +19,7 @@ class AsyncMock:
 
     async def headers(self):
         return {"header": "value"}
+
 
 class AsyncMockImage:
     def __init__(self):
@@ -55,7 +57,7 @@ async def test__run_with_head(monkeypatch):
             },
         },
     )
-    assert resp == [(TEST_URL, "", "content-type: text/html")]
+    assert resp == [(TEST_URL, "", {"content-type": "text/html"})]
 
 
 @pytest.mark.asyncio
@@ -68,7 +70,7 @@ async def test__run_with_get(monkeypatch):
     async_http = AsyncHTTP()
     monkeypatch.setattr("aiohttp.ClientSession.get", mock_client_get)
     resp = await async_http.get([TEST_URL], settings={"status": 200, "timeout": 60})
-    assert resp == [(TEST_URL, "im alive!", "content-type: text/html")]
+    assert resp == [(TEST_URL, "im alive!", {"content-type": "text/html"})]
 
 
 @pytest.mark.asyncio
