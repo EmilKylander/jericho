@@ -245,7 +245,9 @@ result_relevant = ResultRelevant(
 )
 
 BATCH_SIZE = 100 if args.batch_size is not None else args.batch_size
-AMOUNT_OF_THREADS = 40 if args.threads is not None else args.threads
+AMOUNT_OF_THREADS = 40
+if args.threads:
+    AMOUNT_OF_THREADS = args.threads
 
 CONVERTERS = {
     'identifier': Identifier()
