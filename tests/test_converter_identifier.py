@@ -1,7 +1,9 @@
+import pytest
+import unittest
 from jericho.converters.identifier import Identifier
 
 
-async def test_check_successful_conversion():
+def test_check_successful_conversion():
     a = Identifier()
 
     result = a.run(
@@ -31,7 +33,7 @@ async def test_check_successful_conversion():
             assert technology == {'technology': 'Java', 'version': '', 'theme': '', 'plugins': ''}
 
 
-async def test_check_successful_conversion_with_version():
+def test_check_successful_conversion_with_version():
     a = Identifier()
 
     result = a.run(

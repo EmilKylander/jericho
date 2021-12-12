@@ -160,7 +160,7 @@ class AsyncHTTP:
         tasks = []
         settings = self._parse_settings(settings)
         settings["method"] = HttpRequestMethods.HEAD.value
-        async with ClientSession() as session:
+        async with ClientSession(connector=aiohttp.TCPConnector(ssl=False, enable_cleanup_closed=True, force_close=True)) as session:
             for link in links:
                 task = asyncio.ensure_future(self.bound_fetch(link, settings, session))
                 tasks.append(task)
@@ -178,7 +178,7 @@ class AsyncHTTP:
         tasks = []
         settings = self._parse_settings(settings)
         settings["method"] = HttpRequestMethods.GET.value
-        async with ClientSession() as session:
+        async with ClientSession(connector=aiohttp.TCPConnector(ssl=False, enable_cleanup_closed=True, force_close=True)) as session:
             for link in links:
                 task = asyncio.ensure_future(self.bound_fetch(link, settings, session))
                 tasks.append(task)
