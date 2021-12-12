@@ -40,7 +40,7 @@ from jericho.plugin.output_verifier import OutputVerifier
 from jericho.plugin.result_is_relevant import ResultRelevant
 from jericho.plugin.notifications import Notifications
 from jericho.plugin.threaded_async_http import ThreadedAsyncHTTP
-from jericho.plugin.data_collection import DataBucket
+from jericho.plugin.data_bucket import DataBucket
 from jericho.repositories.cache_lookup import CacheLookup
 from jericho.repositories.result_lookup import ResultLookup
 from jericho.repositories.endpoints_lookup import EndpointsLookup
@@ -232,7 +232,7 @@ cache_lookup = CacheLookup(session)
 result_lookup = ResultLookup(session)
 output_verifier = OutputVerifier()
 diff = Diff()
-data_bucket = DataBucket(100000)
+data_bucket = DataBucket(max_size=10000)
 
 result_relevant = ResultRelevant(
     investigate=investigate,

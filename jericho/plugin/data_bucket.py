@@ -9,7 +9,7 @@ class DataBucket:
         self.bucket = []
 
     def save(self, data_to_save: tuple):
-        logging.debug("Saving data to the bucket")
+        logging.info(f"Saving {getsizeof(data_to_save)} bytes to bucket ({getsizeof(self.bucket)} total size)")
         self.bucket.append(data_to_save)
         return True
 

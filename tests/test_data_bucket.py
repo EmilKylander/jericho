@@ -1,5 +1,5 @@
 #!/bin/python3
-from jericho.plugin.data_collection import DataBucket
+from jericho.plugin.data_bucket import DataBucket
 
 
 def test_save_data_to_bucket():
