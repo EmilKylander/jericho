@@ -3,6 +3,7 @@ import logging
 import typing
 import html2text
 import re
+import gc
 import html
 import validators
 from bs4 import BeautifulSoup
@@ -142,6 +143,7 @@ class Identifier:
 
         soup.decompose()
         del wappalyzer
+        gc.collect()
 
         return {
             "status": status,
