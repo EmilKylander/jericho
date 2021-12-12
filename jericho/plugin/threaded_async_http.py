@@ -30,6 +30,7 @@ class ThreadedAsyncHTTP:
         self.wip_queue: queue.Queue = queue.Queue()
 
         for worker_id in range(num_threads):
+            logging.info("Spinning up thread %s", worker_id)
             thread_queue: queue.Queue = queue.Queue()
             self.queues.append(thread_queue)
             thread = threading.Thread(
