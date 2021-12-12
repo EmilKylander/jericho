@@ -33,8 +33,6 @@ import sqlalchemy
 from mpi4py import MPI
 from sqlalchemy.orm import sessionmaker
 
-from jericho.enums.http_request_methods import HttpRequestMethods
-
 from jericho.plugin.async_http import AsyncHTTP
 from jericho.plugin.investigate import Investigate
 from jericho.plugin.diff import Diff
@@ -42,6 +40,7 @@ from jericho.plugin.output_verifier import OutputVerifier
 from jericho.plugin.result_is_relevant import ResultRelevant
 from jericho.plugin.notifications import Notifications
 from jericho.plugin.threaded_async_http import ThreadedAsyncHTTP
+from jericho.plugin.data_collection import DataBucket
 from jericho.repositories.cache_lookup import CacheLookup
 from jericho.repositories.result_lookup import ResultLookup
 from jericho.repositories.endpoints_lookup import EndpointsLookup
@@ -67,7 +66,7 @@ from jericho.helpers import (
     merge_array_to_iterator,
     parse_cluster_settings,
     split_array_by,
-    chunks
+    chunks,
 )
 
 # Instantiate the parser
@@ -233,6 +232,7 @@ cache_lookup = CacheLookup(session)
 result_lookup = ResultLookup(session)
 output_verifier = OutputVerifier()
 diff = Diff()
+data_bucket = DataBucket(100000)
 
 result_relevant = ResultRelevant(
     investigate=investigate,
@@ -249,9 +249,7 @@ AMOUNT_OF_THREADS = 40
 if args.threads:
     AMOUNT_OF_THREADS = args.threads
 
-CONVERTERS = {
-    'identifier': Identifier()
-}
+CONVERTERS = {"identifier": Identifier()}
 if args.input:
     input = args.input
 
@@ -264,7 +262,6 @@ def save_result(url: str, output: str) -> None:
         logging.info("The url %s does not exist, saving..", url)
         result_lookup.save(url, output)
 
-
 def execute(payload: tuple) -> list:
     """This is the main module which will handle all execution"""
 
@@ -275,7 +272,7 @@ def execute(payload: tuple) -> list:
     configuration, endpoints, domains = payload
     notifications_configuration = configuration.get("notifications")
     converter_notifications = configuration.get("converter_notifications")
-    total_results: typing.List = []
+    total_results: typing.List[tuple] = []
     threaded_async_http = ThreadedAsyncHTTP(
         async_http, AMOUNT_OF_THREADS, configuration
     )
@@ -288,15 +285,12 @@ def execute(payload: tuple) -> list:
     if converter_notifications:
         converter_notifications = Notifications(converter_notifications)
 
-
     if len(endpoints) == 0:
         logging.error("No endpoint patterns was supplied")
         return []
 
     total_sites = len(domains)
     logging.info("Got %s amount of domains", total_sites)
-    amount_scanned = 0
-
     should_scan_both_schemes = args.scan_both_schemes
 
     total_endpoints = len(domains) * len(endpoints)
@@ -308,72 +302,58 @@ def execute(payload: tuple) -> list:
     if args.converter:
         urls = chunks(domains, BATCH_SIZE)
     else:
-        urls = merge_array_to_iterator(endpoints, domains, domains_batch_size=BATCH_SIZE)
+        urls = merge_array_to_iterator(
+            endpoints, domains, domains_batch_size=BATCH_SIZE
+        )
 
     for created_requests in urls:
         logging.debug("Adding HTTP schemes if missing")
-        created_requests = add_missing_schemes_to_domain_list(created_requests, should_scan_both_schemes)
+        created_requests = add_missing_schemes_to_domain_list(
+            created_requests, should_scan_both_schemes
+        )
 
         # Which endpoints respond with status 200 on HEAD requests?
         logging.debug(f"Sending {len(created_requests)} HEAD requests..")
-        threaded_async_http.start_bulk(created_requests, HttpRequestMethods.HEAD)
-        head_responsive = threaded_async_http.get_response()
+        threaded_async_http.start_bulk(created_requests)
 
-        # Get the content of the endpoints with the OK http responses
-        get_responsive = [head[0] for head in head_responsive]
-        logging.debug(f"Sending GET to {len(get_responsive)} domains..")
-        threaded_async_http.start_bulk(get_responsive, HttpRequestMethods.GET)
-        endpoints_content_with_ok_status = threaded_async_http.get_response()
-
-        logging.debug("Finished with the GET requests")
-
-        # We might want to get the actual data from the domains in a serialized form
-        if args.converter:
-            converted_results = []
-            for url, html, headers in endpoints_content_with_ok_status:
+        for url, html, headers in threaded_async_http.get_response():
+            # We might want to get the actual data from the domains in a serialized form
+            if args.converter:
                 logging.debug(f"Running the converter on {url}")
-                result = CONVERTERS.get(args.converter).run("", url, 200, headers, html)
+                result = CONVERTERS.get(args.converter).run(
+                    "", url, 200, headers, html
+                )
                 logging.info(f"Parsed {url} - Title: {result['title']}")
-                converted_results.append(result)
+                data_bucket.save(result)
 
-            # Send the notifications for the converter
-            logging.debug("Sending notifications")
-            if converter_notifications:
-                asyncio.run(converter_notifications.run_all(json.dumps(converted_results)))
-                
-            logging.debug("Sent all notifications")
+                if data_bucket.is_full():
+                    # Send the notifications for the converter
+                    logging.debug("Sending notifications")
+                    if converter_notifications:
+                        asyncio.run(
+                            converter_notifications.run_all(json.dumps(data_bucket.get()))
+                        )
+                    data_bucket.empty()
 
-            # The rest of the function analyzes endpoints, there's no point to keep it running
-            continue
-        else:
-            #  Strip away the headers because it's only used with web scraping
-            endpoints_content_with_ok_status = [(url, content) for url, content, _ in endpoints_content_with_ok_status]
+                logging.debug("Sent all notifications")
 
-        # Which endpoints return data that is probably useful?
-        logging.debug("Analyzing the responses")
-        relevant_results = [
-            result
-            for result in endpoints_content_with_ok_status
-            if result_relevant.check(
-                result[0], result[1], endpoints
-            )  # Returned is a type (url, output)
-        ]
+                # The rest of the function analyzes endpoints, there's no point to keep it running
+                continue
+  
+            logging.debug("Analyzing the responses")
 
-        logging.debug("Sending the notifications..")
-        # Send the relevant results to all of the HTTP callbacks (Slack, etc)
-        if notifications_configuration:
-            for url, _ in relevant_results:
-                asyncio.run(notifications.run_all(url))
+            if result_relevant.check(url, html, endpoints):
+                logging.debug("Sending the notifications..")
+                if notifications_configuration:
+                    asyncio.run(notifications.run_all(url))
 
-        logging.debug("Saving results..")
-        # Just save the result in real time if its standalone
-        if cluster_role == ClusterRole.DISABLED:
-            for url, output in relevant_results:
-                save_result(url, output)
+                logging.debug("Saving result..")
+                # Just save the result in real time if its standalone
+                if cluster_role == ClusterRole.DISABLED:
+                    save_result(url, html)
 
-        total_results = total_results + relevant_results
-        amount_scanned = amount_scanned + len(created_requests)
-        logging.info("Scanned %s/%s", amount_scanned, total_endpoints)
+            total_results = total_results + [(url, html)]
+            logging.info("Found results %s/%s", len(total_results), total_endpoints)
 
     logging.debug("Finished, closing..")
     threaded_async_http.close()
@@ -399,17 +379,13 @@ def run() -> None:
         # Get the sources notifications settings so we can send it to the replicas
 
         endpoints_from_database = endpoints_lookup.get()
-        data = [
-            (configuration, endpoints_from_database, row)
-            for row in rows
-        ]
+        data = [(configuration, endpoints_from_database, row) for row in rows]
 
         logging.debug("Done scattering domains (%s chunks)..", len(data))
 
     data = comm.scatter(data, root=0)
 
     data = execute(data)
-
     gathered_data = comm.gather(data, root=0)
 
     if cluster_role != ClusterRole.SOURCE:
@@ -421,6 +397,7 @@ def run() -> None:
 
         for url, output in response:
             save_result(url, output)
+
 
 def main() -> typing.Any:
     """The main module"""

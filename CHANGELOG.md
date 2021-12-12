@@ -1,3 +1,11 @@
+# 2021-12-12 0.1.18
+
+1. In the previous version, we send X amount of HEAD HTTP requests and wait for them, then we send X amount of GET requests
+to the websites that respond to the HEAD responses. This is blocking because some threads are being idle after they're done working
+and we are blocking the Jericho until the complete results have been returned. To mitigate this issue Jericho is now sending the domain list
+to threaded_async_http that will send the HEAD HTTP requests but will save the result directly to the work queue where a GET request is issued
+immediately to an available thread.
+
 # 2021-12-06 0.1.15
 
 1. Added experimental support for web scraping

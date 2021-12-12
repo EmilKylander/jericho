@@ -10,10 +10,10 @@ import urllib.parse
 import cchardet
 from Wappalyzer import Wappalyzer, WebPage
 
+
 class Identifier:
     def __init__(self):
         self.wappalyzer = Wappalyzer.latest()
-
 
     def _get_text(self, url: str, site_html: str) -> str:
         logging.debug("Getting the raw text")
@@ -113,23 +113,31 @@ class Identifier:
 
         return list(set(domains))
 
-    def _get_technologies(self, url: str, site_html: str, headers: dict) -> typing.List[dict]:
+    def _get_technologies(
+        self, url: str, site_html: str, headers: dict
+    ) -> typing.List[dict]:
         techs = []
         webpage = WebPage(url, site_html, headers)
-        for technology, info in self.wappalyzer.analyze_with_versions_and_categories(webpage).items():
+        for technology, info in self.wappalyzer.analyze_with_versions_and_categories(
+            webpage
+        ).items():
             version = ""
             if len(info.get("versions")) > 0:
                 version = info.get("versions")[0]
-            techs.append({
-                'technology': technology,
-                'version': version,
-                "theme": "",
-                "plugins": ""
-            })
+            techs.append(
+                {
+                    "technology": technology,
+                    "version": version,
+                    "theme": "",
+                    "plugins": "",
+                }
+            )
 
         return techs
 
-    def run(self, ip: str, url: str, status: int, headers: dict, site_html: str) -> dict:
+    def run(
+        self, ip: str, url: str, status: int, headers: dict, site_html: str
+    ) -> dict:
         soup = BeautifulSoup(site_html, "lxml")
         contact_info = self._get_contact_info(soup)
         techs = self._get_technologies(url, site_html, headers)

@@ -35,7 +35,9 @@ def logger_convert(level: str) -> int:
     return levels[level]
 
 
-def add_missing_schemes_to_domain_list(domains: list, should_scan_both_schemes: bool = False) -> list:
+def add_missing_schemes_to_domain_list(
+    domains: list, should_scan_both_schemes: bool = False
+) -> list:
     """The file could exist on the http vhost instead of the https vhost, so we check them both"""
     new_domain_list = []
     for domain in domains:
@@ -111,6 +113,4 @@ def split_array_by(
     list_content: typing.List[str], num: int
 ) -> typing.List[typing.List[str]]:
     """Split a list by the num amount of chunks"""
-    return [
-        chunk for chunk in chunks(list_content, math.ceil(len(list_content) / num))
-    ]
+    return [chunk for chunk in chunks(list_content, math.ceil(len(list_content) / num))]

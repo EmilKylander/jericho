@@ -75,9 +75,7 @@ class Notifications:
             notification_name,
             notification_config,
         ) in self.notifications_configuration.items():
-            logging.info(
-                "Sending %s notification", notification_name
-            )
+            logging.info("Sending %s notification", notification_name)
             try:
                 resp = await self._send_notification(notification_config, data)
                 res.append(resp)

@@ -5,9 +5,7 @@ from aiohttp import ClientSession
 import aiohttp.client_exceptions
 from aiohttp.client_reqrep import ClientResponse
 from async_timeout import timeout
-
 from jericho.enums.http_request_methods import HttpRequestMethods
-
 
 class InvalidSetOfDomains(Exception):
     pass
@@ -119,9 +117,7 @@ class AsyncHTTP:
             )
         except aiohttp.ClientResponseError as err:
             logging.warning(
-                "Got a client response error on url %s - Eror: %s",
-                url,
-                err
+                "Got a client response error on url %s - Eror: %s", url, err
             )
         except aiohttp.ServerDisconnectedError:
             logging.debug("The server disconnected us when connecting to %s", url)
@@ -131,9 +127,7 @@ class AsyncHTTP:
                 url,
             )
         except Exception as err:
-            logging.error(
-                "Got error for url %s - Error: %s", url, err
-            )
+            logging.error("Got error for url %s - Error: %s", url, err)
 
         return None, None, None
 
