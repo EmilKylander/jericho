@@ -41,11 +41,10 @@ def add_missing_schemes_to_domain_list(
     """The file could exist on the http vhost instead of the https vhost, so we check them both"""
     new_domain_list = []
     for domain in domains:
-        if not should_scan_both_schemes:
-            if "http://" in domain or "https://" in domain:
-                if not domain in new_domain_list:
-                    new_domain_list.append(domain)
-                continue
+        if not should_scan_both_schemes and ("http://" in domain or "https://" in domain):
+            if not domain in new_domain_list:
+                new_domain_list.append(domain)
+            continue
 
         domain = domain.replace("http://", "").replace("https://", "")
 

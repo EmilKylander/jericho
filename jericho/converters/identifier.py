@@ -4,17 +4,15 @@ import typing
 import html2text
 import re
 import html
+import validators
 from bs4 import BeautifulSoup
 from validate_email import validate_email
 import urllib.parse
 import cchardet
 from Wappalyzer import Wappalyzer, WebPage
-
+from jericho.enums.link_prefixes import LinkPrefixes
 
 class Identifier:
-    def __init__(self):
-        self.wappalyzer = Wappalyzer.latest()
-
     def _get_text(self, url: str, site_html: str) -> str:
         logging.debug("Getting the raw text")
         try:
@@ -59,20 +57,17 @@ class Identifier:
         phones = []
 
         for link in links:
-            try:
-                currentLink = link.get("href")
+            current_link = link.get("href", "")
 
-                if "?" in currentLink:
-                    currentLink = currentLink.split("?")[0]
+            if "?" in current_link:
+                current_link = current_link.split("?")[0]
 
-                if "tel:" in currentLink:
-                    phones.append(currentLink.replace("tel:", ""))
-                elif "mailto:" in currentLink:
-                    parsed = validate_email(currentLink.replace("mailto:", ""))
-                    if parsed:
-                        emails.append(currentLink.replace("mailto:", ""))
-            except:
-                continue
+            if LinkPrefixes.PHONE.value in current_link:
+                phones.append(current_link.replace(LinkPrefixes.PHONE.value, ""))
+            elif LinkPrefixes.MAIL.value in current_link:
+                parsed = validate_email(current_link.replace(LinkPrefixes.MAIL.value, ""))
+                if parsed:
+                    emails.append(current_link.replace(LinkPrefixes.MAIL.value, ""))
 
         return {"phones": list(set(phones)), "emails": list(set(emails))}
 
@@ -104,21 +99,21 @@ class Identifier:
         links = [a.get("href") for a in soup.find_all("a", href=True)]
         domains = []
         for link in links:
-            try:
-                parsed_uri = urllib.parse.urlsplit(link)
-            except:
-                pass
+            if not validators.url(link):
+                continue
+
+            parsed_uri = urllib.parse.urlsplit(link)
             if parsed_uri.scheme == "http" or parsed_uri.scheme == "https":
                 domains.append(parsed_uri.scheme + "://" + parsed_uri.netloc)
 
         return list(set(domains))
 
     def _get_technologies(
-        self, url: str, site_html: str, headers: dict
+        self, url: str, site_html: str, headers: dict, wappalyzer: Wappalyzer
     ) -> typing.List[dict]:
         techs = []
         webpage = WebPage(url, site_html, headers)
-        for technology, info in self.wappalyzer.analyze_with_versions_and_categories(
+        for technology, info in wappalyzer.analyze_with_versions_and_categories(
             webpage
         ).items():
             version = ""
@@ -138,10 +133,15 @@ class Identifier:
     def run(
         self, ip: str, url: str, status: int, headers: dict, site_html: str
     ) -> dict:
+        wappalyzer = Wappalyzer.latest()
+
         soup = BeautifulSoup(site_html, "lxml")
         contact_info = self._get_contact_info(soup)
-        techs = self._get_technologies(url, site_html, headers)
+        techs = self._get_technologies(url, site_html, headers, wappalyzer)
         headers = "\n".join([f"{key}: {val}" for key, val in headers.items()])
+
+        soup.decompose()
+        del wappalyzer
 
         return {
             "status": status,

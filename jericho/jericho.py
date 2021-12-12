@@ -277,6 +277,7 @@ def execute(payload: tuple) -> list:
     threaded_async_http = ThreadedAsyncHTTP(
         async_http, AMOUNT_OF_THREADS, configuration
     )
+    
 
     # The class is instantiated here because the payload contain the
     # relevant notifications settings
@@ -306,7 +307,6 @@ def execute(payload: tuple) -> list:
         urls = merge_array_to_iterator(
             endpoints, domains, domains_batch_size=BATCH_SIZE
         )
-
     for created_requests in urls:
         logging.debug("Adding HTTP schemes if missing")
         created_requests = add_missing_schemes_to_domain_list(
