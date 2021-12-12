@@ -232,7 +232,7 @@ cache_lookup = CacheLookup(session)
 result_lookup = ResultLookup(session)
 output_verifier = OutputVerifier()
 diff = Diff()
-data_bucket = DataBucket(max_size=10000)
+data_bucket = DataBucket(max_size=100000) # 100kB
 
 result_relevant = ResultRelevant(
     investigate=investigate,
