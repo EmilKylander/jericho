@@ -352,8 +352,9 @@ def execute(payload: tuple) -> list:
                 # Just save the result in real time if its standalone
                 if cluster_role == ClusterRole.DISABLED:
                     save_result(url, html)
+                else:
+                    total_results = total_results + [(url)]
 
-            total_results = total_results + [(url, html)]
             logging.info("Found results %s/%s", len(total_results), total_endpoints)
 
     logging.debug("Finished, closing..")
