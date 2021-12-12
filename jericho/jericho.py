@@ -249,10 +249,11 @@ AMOUNT_OF_THREADS = 40
 if args.threads:
     AMOUNT_OF_THREADS = args.threads
 
+logging.info("Starting with %s threads and %s batch size", AMOUNT_OF_THREADS, BATCH_SIZE)
+
 CONVERTERS = {"identifier": Identifier()}
 if args.input:
     input = args.input
-
 
 def save_result(url: str, output: str) -> None:
     """This is a callback with the purpose of saving a result"""
