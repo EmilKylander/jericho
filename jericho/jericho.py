@@ -20,19 +20,22 @@ This file is suppose to be run from the command line.
 """
 
 #!/bin/python3
-import json
+import asyncio
+import queue
 import typing
 import sys
 import logging
-import asyncio
 from pathlib import Path
 from os import path
 import os
 import argparse
 import sqlalchemy
+import uuid
+import asyncio
+import json
 from mpi4py import MPI
 from sqlalchemy.orm import sessionmaker
-
+from threading import Thread
 from jericho.plugin.async_http import AsyncHTTP
 from jericho.plugin.investigate import Investigate
 from jericho.plugin.diff import Diff
@@ -41,12 +44,17 @@ from jericho.plugin.result_is_relevant import ResultRelevant
 from jericho.plugin.notifications import Notifications
 from jericho.plugin.threaded_async_http import ThreadedAsyncHTTP
 from jericho.plugin.data_bucket import DataBucket
+from jericho.plugin.result import Result
 from jericho.repositories.cache_lookup import CacheLookup
 from jericho.repositories.result_lookup import ResultLookup
 from jericho.repositories.endpoints_lookup import EndpointsLookup
 from jericho.converters.identifier import Identifier
+from jericho.plugin.result import Result
 
 from jericho.models import Base
+
+from jericho.enums.cluster_roles import ClusterRole
+from jericho.enums.thread_response import ThreadResponse
 
 from jericho.cli import (
     import_endpoints,
@@ -54,19 +62,15 @@ from jericho.cli import (
     get_version,
     delete_records,
     delete_endpoints,
+    get_endpoints,
     upgrade,
 )
-
-from jericho.enums.cluster_roles import ClusterRole
 
 from jericho.helpers import (
     load_yaml_file,
     logger_convert,
-    add_missing_schemes_to_domain_list,
-    merge_array_to_iterator,
     parse_cluster_settings,
     split_array_by,
-    chunks,
 )
 
 # Instantiate the parser
@@ -93,7 +97,13 @@ parser.add_argument(
 parser.add_argument(
     "--delete-endpoints",
     action="store_true",
-    help="Delete every endpoint that is found",
+    help="Delete every endpoint",
+)
+
+parser.add_argument(
+    "--get-endpoints",
+    action="store_true",
+    help="Get every endpoint",
 )
 
 parser.add_argument(
@@ -204,7 +214,6 @@ args = parser.parse_args()
 
 root = logging.getLogger()
 if args.log_level:
-    print(f"Using log level '{args.log_level}' from CLI")
     root.setLevel(logger_convert(args.log_level))
 else:
     root.setLevel(log_level)
@@ -232,36 +241,17 @@ cache_lookup = CacheLookup(session)
 result_lookup = ResultLookup(session)
 output_verifier = OutputVerifier()
 diff = Diff()
-data_bucket = DataBucket(max_size=100000) # 100kB
-
-result_relevant = ResultRelevant(
-    investigate=investigate,
-    result_lookup=result_lookup,
-    cache_lookup=cache_lookup,
-    async_http=async_http,
-    diff=diff,
-    output_verifier=output_verifier,
-    configuration=configuration,
-)
+data_bucket = DataBucket(max_size=100000)  # 100kB
 
 BATCH_SIZE = 100 if args.batch_size is not None else args.batch_size
 AMOUNT_OF_THREADS = 40
 if args.threads:
     AMOUNT_OF_THREADS = args.threads
 
-logging.info("Starting with %s threads and %s batch size", AMOUNT_OF_THREADS, BATCH_SIZE)
-
 CONVERTERS = {"identifier": Identifier()}
 if args.input:
     input = args.input
 
-def save_result(url: str, output: str) -> None:
-    """This is a callback with the purpose of saving a result"""
-    logging.info("Got a callback to save url %s", url)
-
-    if not result_lookup.find(url):
-        logging.info("The url %s does not exist, saving..", url)
-        result_lookup.save(url, output)
 
 def execute(payload: tuple) -> list:
     """This is the main module which will handle all execution"""
@@ -270,20 +260,19 @@ def execute(payload: tuple) -> list:
         f"Using {BATCH_SIZE} as batch size and {AMOUNT_OF_THREADS} amount of threads"
     )
 
-    configuration, endpoints, domains = payload
+    finish_queue: queue.Queue = queue.Queue()
+    workload_uuid, configuration, endpoints, domains = payload
     notifications_configuration = configuration.get("notifications")
     converter_notifications = configuration.get("converter_notifications")
-    total_results: typing.List[tuple] = []
-    threaded_async_http = ThreadedAsyncHTTP(
-        async_http, AMOUNT_OF_THREADS, configuration
-    )
-    
 
     # The class is instantiated here because the payload contain the
     # relevant notifications settings
+
+    notifications = None
     if notifications_configuration:
         notifications = Notifications(notifications_configuration)
 
+    converter_notifications = None
     if converter_notifications:
         converter_notifications = Notifications(converter_notifications)
 
@@ -295,71 +284,94 @@ def execute(payload: tuple) -> list:
     logging.info("Got %s amount of domains", total_sites)
     should_scan_both_schemes = args.scan_both_schemes
 
-    total_endpoints = len(domains) * len(endpoints)
+    total_endpoints = total_sites * len(endpoints)
 
     if should_scan_both_schemes:
         logging.info("Scanning both http and https")
         total_endpoints = total_endpoints * 2
 
-    if args.converter:
-        urls = chunks(domains, BATCH_SIZE)
-    else:
-        urls = merge_array_to_iterator(
-            endpoints, domains, domains_batch_size=BATCH_SIZE
-        )
-    for created_requests in urls:
-        logging.debug("Adding HTTP schemes if missing")
-        created_requests = add_missing_schemes_to_domain_list(
-            created_requests, should_scan_both_schemes
-        )
+    threaded_async_http = ThreadedAsyncHTTP(
+        async_http,
+        AMOUNT_OF_THREADS,
+        configuration,
+        finish_queue,
+        should_scan_both_schemes=should_scan_both_schemes,
+        ignore_endpoints=args.converter,
+        endpoints=endpoints,
+    )
 
-        # Which endpoints respond with status 200 on HEAD requests?
-        logging.debug(f"Sending {len(created_requests)} HEAD requests..")
-        threaded_async_http.start_bulk(created_requests)
+    result_relevant = ResultRelevant(
+        investigate=investigate,
+        result_lookup=result_lookup,
+        cache_lookup=cache_lookup,
+        async_http=async_http,
+        diff=diff,
+        output_verifier=output_verifier,
+        configuration=configuration,
+        workload_uuid=workload_uuid,
+    )
 
-        for url, html, headers in threaded_async_http.get_response():
-            # We might want to get the actual data from the domains in a serialized form
-            if args.converter:
-                logging.debug(f"Running the converter on {url}")
-                result = CONVERTERS.get(args.converter).run(
-                    "", url, 200, headers, html
-                )
-                logging.info(f"Parsed {url} - Title: {result['title']}")
-                data_bucket.save(result)
+    result = Result(
+        result_relevant,
+        notifications_configuration,
+        notifications,
+        cluster_role,
+        result_lookup,
+        workload_uuid,
+    )
 
-                if data_bucket.is_full():
-                    # Send the notifications for the converter
-                    logging.debug("Sending notifications")
-                    if converter_notifications:
-                        asyncio.run(
-                            converter_notifications.run_all(json.dumps(data_bucket.get()))
-                        )
-                    data_bucket.empty()
+    p = Thread(
+        target=threaded_async_http.start_bulk,
+        args=(
+            domains,
+            BATCH_SIZE,
+        ),
+    )
+    p.start()
 
-                logging.debug("Sent all notifications")
+    while True:
+        # We are using a queue to respond with the data so we're not blocking the threads when we parse the results
+        queue_payload = finish_queue.get()
+        if queue_payload.get("status") == ThreadResponse.DONE.value:
+            logging.info("Finished")
 
-                # The rest of the function analyzes endpoints, there's no point to keep it running
-                continue
-  
-            logging.debug("Analyzing the responses")
+            # When the scan is complete we need to pull the domains back from all replicas db.
+            # However if we're running as ClusterRole.SOURCE or ClusterRole.DISABLED then
+            # we already have it in our database.
+            if cluster_role == ClusterRole.REPLICA:
+                results = result_lookup.get(workload_uuid)
+                result_lookup.delete_workload(workload_uuid)
+                return results
+            else:
+                return []
 
-            if result_relevant.check(url, html, endpoints):
-                logging.debug("Sending the notifications..")
-                if notifications_configuration:
-                    asyncio.run(notifications.run_all(url))
+        url = queue_payload.get("url")
+        html = queue_payload.get("html")
+        headers = queue_payload.get("headers")
 
-                logging.debug("Saving result..")
-                # Just save the result in real time if its standalone
-                if cluster_role == ClusterRole.DISABLED:
-                    save_result(url, html)
-                else:
-                    total_results = total_results + [(url, html)]
+        # We might want to get the actual data from the domains in a serialized form
+        if args.converter:
+            logging.debug("Running the converter on parsing %s", url)
+            result = CONVERTERS.get(args.converter).run("", url, 200, headers, html)
+            logging.info("Parsed %s - Title: %s", url, result["title"])
+            data_bucket.save(result)
 
-            logging.info("Found results %s/%s", len(total_results), total_endpoints)
+            if data_bucket.is_full():
+                # Send the notifications for the converter
+                logging.debug("Sending notifications")
+                if converter_notifications:
+                    asyncio.run(
+                        converter_notifications.run_all(json.dumps(data_bucket.get()))
+                    )
+                data_bucket.empty()
 
-    logging.debug("Finished, closing..")
-    threaded_async_http.close()
-    return total_results
+            logging.debug("Sent all notifications")
+
+            # The rest of the function analyzes endpoints, there's no point to keep it running
+            continue
+
+        logging.debug("Analyzing the responses")
+        result.process(url, html, endpoints)
 
 
 def run() -> None:
@@ -368,7 +380,7 @@ def run() -> None:
     if rank == 0:
         logging.debug("Getting domains from --input...")
         if not os.path.exists(input):
-            logging.error(f"The path {input} does not exist!")
+            logging.error("The path %s does not exist!", input)
             return None
 
         with open(input, encoding="utf-8") as file:
@@ -381,24 +393,31 @@ def run() -> None:
         # Get the sources notifications settings so we can send it to the replicas
 
         endpoints_from_database = endpoints_lookup.get()
-        data = [(configuration, endpoints_from_database, row) for row in rows]
+        workload_uuid = str(uuid.uuid4())
+        logging.info("Using workload uid %s", workload_uuid)
+        data = [
+            (workload_uuid, configuration, endpoints_from_database, row) for row in rows
+        ]
 
         logging.debug("Done scattering domains (%s chunks)..", len(data))
 
     data = comm.scatter(data, root=0)
 
+    logging.info(
+        "Starting with %s threads and %s batch size", AMOUNT_OF_THREADS, BATCH_SIZE
+    )
+
     data = execute(data)
-    gathered_data = comm.gather(data, root=0)
 
-    if cluster_role != ClusterRole.SOURCE:
-        return None
+    # Combine all of the replica results and save it to the ClusterRole.SOURCE database
+    data = comm.gather(data, root=0)
 
-    for response in gathered_data:
-        if not response:
-            continue
-
-        for url, output in response:
-            save_result(url, output)
+    # Only the source should gather the data
+    if cluster_role == ClusterRole.SOURCE:
+        for response in data:
+            for url, output in response:
+                logging.info("Saving url %s to source database", url)
+                result_lookup.save(workload_uuid, url, output)
 
 
 def main() -> typing.Any:
@@ -415,6 +434,9 @@ def main() -> typing.Any:
 
     if args.delete_endpoints:
         delete_endpoints(endpoints_lookup)
+
+    if args.get_endpoints:
+        get_endpoints(endpoints_lookup)
 
     if args.upgrade:
         upgrade()

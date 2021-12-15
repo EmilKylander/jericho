@@ -13,13 +13,13 @@ class CacheLookup:
         content = (
             self.session.query(Jericho404Cache)
             .filter(Jericho404Cache.domain == domain)
-            .all()
+            .first()
         )
 
-        if len(content) == 0:
+        if not content:
             return False, ""
 
-        return True, content[0].content
+        return True, content.content
 
     def save_content(self, domain: str, content: str) -> bool:
         """Save the content of a domain"""
@@ -32,6 +32,7 @@ class CacheLookup:
             logging.warning(
                 "Could not save content for %s because of error %s", domain, err
             )
+            self.session.rollback()
             return False
 
     def delete(self, domain: str) -> bool:

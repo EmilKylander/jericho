@@ -1,14 +1,17 @@
 #!/bin/python3
-import time
 import queue
-import threading
 import asyncio
-import logging
 import typing
+import concurrent.futures
 from jericho.enums.http_codes import HttpStatusCode
+from jericho.enums.thread_response import ThreadResponse
 from jericho.plugin.async_http import AsyncHTTP
-from jericho.enums.http_request_methods import HttpRequestMethods
-from jericho.helpers import split_array_by
+from jericho.helpers import (
+    split_array_by,
+    add_missing_schemes_to_domain_list,
+    chunks,
+    merge_array_to_iterator,
+)
 
 
 class InvalidHTTPRequestMethod(Exception):
@@ -16,136 +19,92 @@ class InvalidHTTPRequestMethod(Exception):
 
 
 class ThreadedAsyncHTTP:
-    def __init__(self, async_http: AsyncHTTP, num_threads: int, configuration: dict):
-        self.queues: typing.List[queue.Queue] = []
-        self.threads: typing.List[threading.Thread] = []
+    def __init__(
+        self,
+        async_http: AsyncHTTP,
+        num_threads: int,
+        configuration: dict,
+        finish_queue: queue.Queue,
+        should_scan_both_schemes: bool,
+        ignore_endpoints: bool,
+        endpoints: typing.List[str],
+    ):
         self.configuration: dict = configuration
-        self.parts: typing.List[typing.List[str]] = []
         self.async_http: AsyncHTTP = async_http
         self.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
-        self.work_initialized = False
+        self.num_threads = num_threads
+        self.should_scan_both_schemes = should_scan_both_schemes
+        self.ignore_endpoints = ignore_endpoints
+        self.endpoints = endpoints
 
-        self.finish_queue: queue.Queue = queue.Queue()
-        self.single_queue: queue.Queue = queue.Queue()
-        self.wip_queue: queue.Queue = queue.Queue()
+        self.finish_queue: queue.Queue = finish_queue
 
-        for worker_id in range(num_threads):
-            logging.info("Spinning up thread %s", worker_id)
-            thread_queue: queue.Queue = queue.Queue()
-            self.queues.append(thread_queue)
-            thread = threading.Thread(
-                target=self._send,
-                name=f"worker-{worker_id}",
-                args=(thread_queue, self.finish_queue),
-            )
-            self.threads.append(thread)
-
-        [t.start() for t in self.threads]
-
-    async def _send_head_request(
-        self, domains: typing.List[str]
-    ) -> typing.List[typing.Tuple]:
-        """Send a HEAD requests to a list of domains"""
-        res =  await self.async_http.head(
-            domains,
-            settings={
-                "status": HttpStatusCode.OK.value,
-                "timeout": self.configuration.get("max_head_timeout"),
-                "ignore_multimedia": self.configuration.get("ignore_multimedia"),
-                "headers": {"User-Agent": self.user_agent},
-            },
-        )
-
-        self.wip_queue.get()
-        return res
-
-    async def _send_get_request(
-        self, domains: typing.List[str]
-    ) -> typing.List[typing.Tuple]:
-        """Send a GET requests to a list of domains"""
-        res = await self.async_http.get(
-            domains,
-            settings={
-                "status": HttpStatusCode.OK.value,
-                "timeout": self.configuration.get("max_get_timeout"),
-                "ignore_multimedia": self.configuration.get("ignore_multimedia"),
-                "headers": {"User-Agent": self.user_agent},
-            },
-        )
-
-        self.wip_queue.get()
-        return res
-
-    def _send(self, single_queue: queue.Queue, finish_queue: queue.Queue) -> typing.Any:
+    async def _send(
+        self, send_domains: typing.List[str], batch_size: int
+    ) -> typing.Any:
         """
         A method which is ran through a thread, purpose is to
         launch async method to send HTTP requests
         """
-        while True:
-            payload = single_queue.get()
-            if isinstance(payload, str):
-                if payload == f"CLOSE-{threading.current_thread().name}":
-                    logging.debug("Got a close signal, exiting thread..")
-                    return True
-            else:
-                method, domains = payload
-                if method == HttpRequestMethods.HEAD:
-                    self.wip_queue.put(True)
-                    head_responsive = [
-                        domain
-                        for domain, _, _ in asyncio.run(
-                            self._send_head_request(domains)
-                        )
-                    ]
-                    single_queue.put((HttpRequestMethods.GET, head_responsive))
+        # Here we get the full domain list / amount of threads
+        # If we have a list of 100,000 domains and 5 threads
+        # we don't want to send 20,000 requests at the same time per thread
+        # so we split it again
+        if self.ignore_endpoints:
+            url_chunks = chunks(send_domains, batch_size)
+        else:
+            url_chunks = merge_array_to_iterator(
+                self.endpoints, send_domains, domains_batch_size=batch_size
+            )
 
-                elif method == HttpRequestMethods.GET:
-                    self.wip_queue.put(True)
-                    res = asyncio.run(self._send_get_request(domains))
-                    finish_queue.put(res)
-                else:
-                    self.close()
-                    raise InvalidHTTPRequestMethod
+        for url_chunk in url_chunks:
+            url_chunk = add_missing_schemes_to_domain_list(
+                url_chunk, self.should_scan_both_schemes
+            )
+            res = await self.async_http.get(
+                url_chunk,
+                settings={
+                    "status": HttpStatusCode.OK.value,
+                    "timeout": self.configuration.get("max_get_timeout"),
+                    "ignore_multimedia": self.configuration.get("ignore_multimedia"),
+                    "headers": {"User-Agent": self.user_agent},
+                },
+            )
 
-    def _is_idle(self):
-        time.sleep(.1)
-        empty_work_queues = [
-            single_queue
-            for _, single_queue in enumerate(self.queues)
-            if single_queue.empty()
-        ]
-        logging.debug(
-            f"Checking idle - Work queue: {len(empty_work_queues) == len(self.queues)} - Finish queue: {self.finish_queue.empty()} - WIP queue: {self.wip_queue.qsize()}"
-        )
-        return (
-            len(empty_work_queues) == len(self.queues)
-            and self.finish_queue.empty()
-            and self.wip_queue.empty()
-        )
+            for url, html, headers in res:
+                self.finish_queue.put(
+                    {
+                        "status": ThreadResponse.RESULT.value,
+                        "url": url,
+                        "html": html,
+                        "headers": dict(headers),
+                    }
+                )
 
-    def get_response(self) -> typing.List[typing.Tuple]:
-        """Loop through all of the work queues and combine the data"""
-        while not self._is_idle():
-            if not self.finish_queue.empty():
-                for res in self.finish_queue.get():
-                    yield res
-        return False
+    def _async_send(
+        self, send_domains: typing.List[str], batch_size: int
+    ) -> typing.Any:
+        """Start the coroutine from a non-async method"""
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(self._send(send_domains, batch_size))
 
-    def start_bulk(self, domains: typing.List[str]) -> typing.Any:
+    async def _run(self, domains: typing.List[str], batch_size: int):
         """Supply domains list to all the threads"""
+        domain_chunks = split_array_by(domains, self.num_threads)
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=self.num_threads
+        ) as pool:
+            loop = asyncio.get_running_loop()
+            futures = [
+                loop.run_in_executor(pool, self._async_send, domain_chunk, batch_size)
+                for domain_chunk in domain_chunks
+            ]
+            await asyncio.gather(*futures, return_exceptions=True)
 
-        self.parts = split_array_by(domains, len(self.threads))
-        for key, single_queue in enumerate(self.queues):
-            if key < len(
-                self.parts
-            ):  # The data might not be enough for the amount of threads
-                single_queue.put((HttpRequestMethods.HEAD, self.parts[key]))
+        return True
 
-    def close(self) -> typing.Any:
-        """Send a kill message to all worker threads and join the threads"""
-
-        for key, single_queue in enumerate(self.queues):
-            single_queue.put(f"CLOSE-worker-{key}")
-
-        logging.debug("Joining threads..")
-        [t.join() for t in self.threads]
+    def start_bulk(self, domains: typing.List[str], batch_size: int) -> typing.Any:
+        """Supply domains list to all the threads"""
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(self._run(domains, batch_size))
+        self.finish_queue.put({"status": ThreadResponse.DONE.value})

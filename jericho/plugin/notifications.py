@@ -25,7 +25,11 @@ class Notifications:
         self, notification_config: dict, url: str
     ) -> ClientResponse:
         """Send the notification through GET HTTP method"""
-        async with ClientSession(connector=aiohttp.TCPConnector(ssl=False, enable_cleanup_closed=True, force_close=True)) as session:
+        async with ClientSession(
+            connector=aiohttp.TCPConnector(
+                ssl=False, enable_cleanup_closed=True, force_close=True
+            )
+        ) as session:
             return await session.get(
                 notification_config.get("url", "").replace(
                     self.url_replacement_string, url
@@ -48,7 +52,11 @@ class Notifications:
             if key.lower() == "content-type" and value.lower() == "application/json":
                 post_data = json.dumps(post_data)
 
-        async with ClientSession(connector=aiohttp.TCPConnector(ssl=False, enable_cleanup_closed=True, force_close=True)) as session:
+        async with ClientSession(
+            connector=aiohttp.TCPConnector(
+                ssl=False, enable_cleanup_closed=True, force_close=True
+            )
+        ) as session:
             return await session.post(
                 notification_config.get("url", "").replace(
                     self.url_replacement_string, data

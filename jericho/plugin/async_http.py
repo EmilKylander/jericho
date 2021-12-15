@@ -7,6 +7,7 @@ from aiohttp.client_reqrep import ClientResponse
 from async_timeout import timeout
 from jericho.enums.http_request_methods import HttpRequestMethods
 
+
 class InvalidSetOfDomains(Exception):
     pass
 
@@ -37,7 +38,8 @@ class AsyncHTTP:
 
         content = ""
         if settings.get("method") != HttpRequestMethods.HEAD.value:
-            content = await response.text()
+            content = await response.read()
+            content = content.decode("utf-8", "ignore")
 
         # Ignore media content
         if settings["ignore_multimedia"] is True:
@@ -160,7 +162,12 @@ class AsyncHTTP:
         tasks = []
         settings = self._parse_settings(settings)
         settings["method"] = HttpRequestMethods.HEAD.value
-        async with ClientSession(connector=aiohttp.TCPConnector(ssl=False, enable_cleanup_closed=True, force_close=True)) as session:
+        async with ClientSession(
+            connector=aiohttp.TCPConnector(
+                ssl=False, enable_cleanup_closed=True, force_close=True
+            ),
+            cookie_jar=aiohttp.DummyCookieJar(),
+        ) as session:
             for link in links:
                 task = asyncio.ensure_future(self.bound_fetch(link, settings, session))
                 tasks.append(task)
@@ -178,7 +185,12 @@ class AsyncHTTP:
         tasks = []
         settings = self._parse_settings(settings)
         settings["method"] = HttpRequestMethods.GET.value
-        async with ClientSession(connector=aiohttp.TCPConnector(ssl=False, enable_cleanup_closed=True, force_close=True)) as session:
+        async with ClientSession(
+            connector=aiohttp.TCPConnector(
+                ssl=False, enable_cleanup_closed=True, force_close=True
+            ),
+            cookie_jar=aiohttp.DummyCookieJar(),
+        ) as session:
             for link in links:
                 task = asyncio.ensure_future(self.bound_fetch(link, settings, session))
                 tasks.append(task)

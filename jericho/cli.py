@@ -47,7 +47,7 @@ def delete_records(result_lookup: ResultLookup) -> None:
 
 
 def delete_endpoints(endpoints_lookup: EndpointsLookup) -> None:
-    """This prints out all of the results we have in our database"""
+    """This deletes out all of the endpoints we have in our database"""
     if endpoints_lookup.delete_all():
         print("OK")
     else:
@@ -66,3 +66,9 @@ def upgrade() -> None:
 
 def get_version() -> typing.Any:
     print(version)
+
+
+def get_endpoints(endpoints_lookup: EndpointsLookup) -> typing.Any:
+    """This prints out all of the results we have in our database"""
+    for endpoint in endpoints_lookup.get():
+        print(f"{endpoint['endpoint']}\t{endpoint['pattern']}")

@@ -7,7 +7,7 @@ RUN pip3 install pyyaml aiohttp sqlalchemy python-Levenshtein-wheels mpi4py bs4 
 RUN echo 'btl_base_warn_component_unused = 0' > /etc/openmpi/openmpi-mca-params.conf 
 COPY . .
 RUN python3 setup.py install
-RUN jericho --import-endpoints data/endpoints.json
+RUN jericho --import-endpoints tests/integration/test-cluster/endpoints.json
 
 # Keep the container alive
 RUN echo ListenAddress 0.0.0.0 >> /etc/ssh/sshd_config

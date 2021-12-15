@@ -33,6 +33,7 @@ class JerichoProgress(Base):
 class JerichoResult(Base):
     __tablename__ = "jericho_result"
 
+    workload_uuid = Column(String(36))
     endpoint = Column(String(255), primary_key=True)
     content = Column(Text)
     time_created = Column(DateTime(timezone=True), server_default=func.now())

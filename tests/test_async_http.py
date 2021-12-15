@@ -14,8 +14,8 @@ class AsyncMock:
     async def __aexit__(self, *error_info):
         return self
 
-    async def text(self):
-        return "im alive!"
+    async def read(self):
+        return b"im alive!"
 
     async def headers(self):
         return {"header": "value"}
@@ -31,8 +31,8 @@ class AsyncMockImage:
     async def __aexit__(self, *error_info):
         return self
 
-    async def text(self):
-        return "im alive!"
+    async def read(self):
+        return b"im alive!"
 
     async def headers(self):
         return {"header": "value"}

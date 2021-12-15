@@ -13,6 +13,7 @@ import cchardet
 from Wappalyzer import Wappalyzer, WebPage
 from jericho.enums.link_prefixes import LinkPrefixes
 
+
 class Identifier:
     def _get_text(self, url: str, site_html: str) -> str:
         logging.debug("Getting the raw text")
@@ -30,7 +31,7 @@ class Identifier:
                 .strip()
             )
         except Exception as err:
-            logging.warning(f"Could not get text from {url} because of error {err}")
+            logging.warning("Could not get text from %s because of error %s", url, err)
             return ""
 
     def _get_description(self, url: str, soup: BeautifulSoup) -> str:
@@ -66,7 +67,9 @@ class Identifier:
             if LinkPrefixes.PHONE.value in current_link:
                 phones.append(current_link.replace(LinkPrefixes.PHONE.value, ""))
             elif LinkPrefixes.MAIL.value in current_link:
-                parsed = validate_email(current_link.replace(LinkPrefixes.MAIL.value, ""))
+                parsed = validate_email(
+                    current_link.replace(LinkPrefixes.MAIL.value, "")
+                )
                 if parsed:
                     emails.append(current_link.replace(LinkPrefixes.MAIL.value, ""))
 
@@ -140,10 +143,6 @@ class Identifier:
         contact_info = self._get_contact_info(soup)
         techs = self._get_technologies(url, site_html, headers, wappalyzer)
         headers = "\n".join([f"{key}: {val}" for key, val in headers.items()])
-
-        soup.decompose()
-        del wappalyzer
-        gc.collect()
 
         return {
             "status": status,

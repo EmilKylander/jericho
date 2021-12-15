@@ -1,4 +1,5 @@
 #!/bin/python3
+import uuid
 from jericho.plugin.async_http import AsyncHTTP
 from jericho.plugin.investigate import Investigate
 from jericho.plugin.diff import Diff
@@ -34,8 +35,8 @@ class AsyncMock:
     async def __aexit__(self, *error_info):
         return self
 
-    async def text(self):
-        return "im alive!"
+    async def read(self):
+        return b"im alive!"
 
 
 Session = sessionmaker(bind=engine)
@@ -48,6 +49,9 @@ cache_lookup = CacheLookup(session)
 async_http = AsyncHTTP()
 output_verifier = OutputVerifier()
 
+workload_uuid = str(uuid.uuid4())
+
+
 result_relevant = ResultRelevant(
     diff=diff,
     investigate=investigate,
@@ -56,6 +60,7 @@ result_relevant = ResultRelevant(
     async_http=async_http,
     output_verifier=output_verifier,
     configuration={"max_result_and_404_percent_diff": 60},
+    workload_uuid=workload_uuid,
 )
 
 result_relevant_with_cache = ResultRelevant(
@@ -66,6 +71,7 @@ result_relevant_with_cache = ResultRelevant(
     async_http=async_http,
     output_verifier=output_verifier,
     configuration={"max_result_and_404_percent_diff": 60},
+    workload_uuid=str(uuid.uuid4()),
 )
 
 
@@ -105,7 +111,7 @@ def test_is_relevant_based_on_string_pattern_without_cache_data(monkeypatch):
 
 def test_is_relevant_based_on_string_pattern_except_if_result_exist():
     result_lookup.delete_all()
-    result_lookup.save("https://google.com/phpinfo.php", "aaaa")
+    result_lookup.save(workload_uuid, "https://google.com/phpinfo.php", "aaaa")
     assert (
         result_relevant.check(
             "https://google.com/phpinfo.php",
@@ -150,7 +156,7 @@ def test_get_json_pattern_from_url():
                 "https://google.com/package.json",
                 [{"endpoint": "/package.json", "pattern": format}],
             )
-            is format
+            == format
         )
 
 
@@ -160,5 +166,5 @@ def test_get_string_pattern_from_url():
             "https://google.com/package.json",
             [{"endpoint": "/package.json", "pattern": '{"test": "testing"}'}],
         )
-        is '{"test": "testing"}'
+        == '{"test": "testing"}'
     )

@@ -1,6 +1,7 @@
 import logging
 import typing
 import asyncio
+import uuid
 from jericho.helpers import get_domain_from_endpoint
 from jericho.plugin.investigate import Investigate
 from jericho.plugin.async_http import AsyncHTTP
@@ -20,6 +21,7 @@ class ResultRelevant:
         diff: Diff,
         output_verifier: OutputVerifier,
         configuration: dict,
+        workload_uuid: uuid.uuid4,
     ):
         """Get objects through dependency injection"""
         self.investigate = investigate
@@ -29,6 +31,7 @@ class ResultRelevant:
         self.async_http = async_http
         self.diff = diff
         self.configuration = configuration
+        self.workload_uuid = workload_uuid
 
     def _get_endpoint_from_url(self, url, endpoints):
         matched_endpoints = []
@@ -47,7 +50,7 @@ class ResultRelevant:
         and if the 404 page and the result is too similar, if it is then disregard it
         """
         domain = get_domain_from_endpoint(url)
-        logging.debug(f"Running investigation on {url}")
+        logging.debug("Running investigation on %s", url)
         pattern = self._get_endpoint_from_url(url, endpoints)
         content_analysis = self.investigate.run(url, output, pattern)
 
@@ -55,9 +58,9 @@ class ResultRelevant:
             return False
 
         # Check if this url has been scanned before
-        logging.debug(f"Checking if {url} has been scanned before")
-        result_already_exist = True if self.result_lookup.find(url) else False
-        if result_already_exist:
+        logging.debug("Checking if %s has been scanned before", url)
+
+        if self.result_lookup.find(self.workload_uuid, url):
             return False
 
         (
@@ -66,7 +69,7 @@ class ResultRelevant:
         ) = self.cache_lookup.find_domain(domain)
 
         # Check if the 404 page exists in the cache, else make a real time request
-        logging.debug(f"Checking if {url} exists in cache..")
+        logging.debug("Checking if %s exists in cache..", url)
         if not domain_is_found_in_404_cache:
             logging.debug(
                 "Could not find %s in cache, sending a request..",
@@ -108,7 +111,7 @@ class ResultRelevant:
             not_found_page_content_analysis == pattern
             and pattern not in self.output_verifier.formats()
         ):
-            logging.debug(f"Analyzing the text difference for url {url}")
+            logging.debug("Analyzing the text difference for url %s", url)
             result_and_404_content_procent_diff = self.diff.check(output, cache_content)
             logging.debug(
                 "We analyzed the text difference between endpoint %s and a 404 page. Difference: %s%%",
@@ -133,6 +136,6 @@ class ResultRelevant:
             )
 
         if not result_and_404_too_different:
-            logging.info(f"Found endpoint {url}")
+            logging.info("Found endpoint %s", url)
 
         return not result_and_404_too_different

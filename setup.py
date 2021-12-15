@@ -28,7 +28,7 @@ setup(
         "cchardet",
         "lxml",
         "python-Wappalyzer",
-        "validators"
+        "validators",
     ],
     # needs to be installed along with your package. Eg: 'caer'
     keywords=["python", "mpi", "cluster", "security"],

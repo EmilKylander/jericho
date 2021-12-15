@@ -37,3 +37,9 @@ def test_fail_gracefully_on_duplicate_domain():
     save = cache_lookup.save_content("https://test2.com", "hello")
     save = cache_lookup.save_content("https://test2.com", "there")
     assert save is False
+
+
+def test_get_content_from_domain_not_exist():
+    cache_lookup = CacheLookup(session)
+    cache_lookup.save_content("https://test.com", "testing content here")
+    assert cache_lookup.find_domain("https://tetesttestst.com") == (False, "")

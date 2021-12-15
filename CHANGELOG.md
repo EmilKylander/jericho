@@ -1,4 +1,17 @@
-# 2021-12-12 0.1.18
+# 2021-12-15 - 0.2.0
+
+1. Refactored the threaded_async_http class to use a thread pool
+2. Added aiohttp.DummyCookieJar() to skip parsing cookies
+3. Added a CLI argument to display all of the endpoints
+4. Removed template variables from loggers
+5. Added a new class called Result to isolate the logic of handling results
+6. Made the replicas save the endpoints in their local database instead of saving it up in memory
+   This is later deleted and sent to the replica, this is why the workload_uuid is introduced.
+7. Replaced .text() with .read() and enforced utf-8 encoding to avoid charset identification which can be memory demanding
+8. Added a fix on ClientSession (ssl, enable_cleanup_closed, force_close) to avoid file descriptor leak
+9. Refactored repositories for better memory management
+
+# 2021-12-12 0.1.1
 
 1. In the previous version, we send X amount of HEAD HTTP requests and wait for them, then we send X amount of GET requests
 to the websites that respond to the HEAD responses. This is blocking because some threads are being idle after they're done working
@@ -6,7 +19,7 @@ and we are blocking the Jericho until the complete results have been returned. T
 to threaded_async_http that will send the HEAD HTTP requests but will save the result directly to the work queue where a GET request is issued
 immediately to an available thread.
 
-# 2021-12-06 0.1.15
+# 2021-12-06 0.1.0
 
 1. Added experimental support for web scraping
 2. Replaced loop.run_until_complete with asyncio.run in the tests

@@ -33,7 +33,7 @@ class Investigate:
         Analyze if the content is relevant based on lack of excluded words and phrases.
         If we have content type patterns we should use it, otherwise check if the string exists
         """
-        logging.debug(f"Lowercasing content for url {url}")
+        logging.debug("Lowercasing content for url %s", url)
         content = content.lower().strip()
 
         # These responses are irrelevant and come from unexpected blocks, misconfigured 404s etc
@@ -55,7 +55,7 @@ class Investigate:
 
         # Check if it matches the pattern
         if pattern in self.output_verifier.formats():
-            logging.debug(f"Checking for pattern {pattern} in {url} content")
+            logging.debug("Checking for pattern %s in %s content", pattern, url)
             result = self.output_verifier.verify(content, pattern)
             logging.debug(
                 "Tested if url %s is %s - evaluated to %s", url, pattern, result
