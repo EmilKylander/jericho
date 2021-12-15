@@ -12,5 +12,5 @@ async-timeout
 html2text
 cchardet
 lxml
-python-Wappalyzer==0.4.0
+python-Wappalyzer
 validators
