@@ -263,7 +263,7 @@ def execute(payload: tuple) -> list:
     finish_queue: queue.Queue = queue.Queue()
     workload_uuid, configuration, endpoints, domains = payload
     notifications_configuration = configuration.get("notifications")
-    converter_notifications = configuration.get("converter_notifications")
+    converter_configuration = configuration.get("converter_notifications")
 
     # The class is instantiated here because the payload contain the
     # relevant notifications settings
@@ -273,8 +273,8 @@ def execute(payload: tuple) -> list:
         notifications = Notifications(notifications_configuration)
 
     converter_notifications = None
-    if converter_notifications:
-        converter_notifications = Notifications(converter_notifications)
+    if converter_configuration:
+        converter_notifications = Notifications(converter_configuration)
 
     if len(endpoints) == 0:
         logging.error("No endpoint patterns was supplied")
