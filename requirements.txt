@@ -12,3 +12,4 @@ cchardet
 lxml
 python-Wappalyzer
 validators
+pytest
