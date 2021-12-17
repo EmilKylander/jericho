@@ -61,6 +61,7 @@ class ThreadedAsyncHTTP:
             url_chunk = add_missing_schemes_to_domain_list(
                 url_chunk, self.should_scan_both_schemes
             )
+
             res = await self.async_http.get(
                 url_chunk,
                 settings={
@@ -68,7 +69,7 @@ class ThreadedAsyncHTTP:
                     "timeout": self.configuration.get("max_get_timeout"),
                     "ignore_multimedia": self.configuration.get("ignore_multimedia"),
                     "headers": {"User-Agent": self.user_agent},
-                },
+                }
             )
 
             for url, html, headers in res:

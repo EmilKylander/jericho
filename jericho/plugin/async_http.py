@@ -1,4 +1,5 @@
 import asyncio
+from asyncio.locks import Semaphore
 import logging
 import typing
 from aiohttp import ClientSession
@@ -18,7 +19,6 @@ class AsyncHTTP:
         self.multimedia_content_types = ["audio", "image", "video", "font"]
         self.max_content_length = 1000000  # 1Mb
         self.max_retries = 1
-        self.sema = asyncio.Semaphore(1)
 
     def _is_multi_media(self, content_type: str) -> bool:
         """Check if content is a multi media"""
@@ -67,6 +67,7 @@ class AsyncHTTP:
             return url, content, headers
 
         return None, None, None
+
 
     async def fetch(self, url: str, settings: dict, session: ClientSession) -> tuple:
         """Calls different http methods based on which method was passed to async_http"""
@@ -163,7 +164,8 @@ class AsyncHTTP:
         tasks = []
         settings = self._parse_settings(settings)
         settings["method"] = HttpRequestMethods.HEAD.value
-        async with self.sema, ClientSession(
+        sema = asyncio.Semaphore(1)
+        async with sema, ClientSession(
             connector=aiohttp.TCPConnector(
                 ssl=False, enable_cleanup_closed=True, force_close=True
             ),
@@ -185,7 +187,8 @@ class AsyncHTTP:
         tasks = []
         settings = self._parse_settings(settings)
         settings["method"] = HttpRequestMethods.GET.value
-        async with self.sema, ClientSession(
+        sema = asyncio.Semaphore(1)
+        async with sema, ClientSession(
             connector=aiohttp.TCPConnector(
                 ssl=False, enable_cleanup_closed=True, force_close=True
             ),

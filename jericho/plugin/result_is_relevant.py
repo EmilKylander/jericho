@@ -75,7 +75,8 @@ class ResultRelevant:
                 "Could not find %s in cache, sending a request..",
                 f"{domain}/page_not_found.html",
             )
-            page_not_found_res = asyncio.run(
+            loop = asyncio.new_event_loop()
+            page_not_found_res = loop.run_until_complete(
                 self.async_http.get(
                     [f"{domain}/page_not_found.html"],
                     settings={
@@ -83,9 +84,10 @@ class ResultRelevant:
                         "headers": {
                             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
                         },
-                    },
+                    }
                 ),
             )
+            loop.close()
             if len(page_not_found_res) == 0:
                 logging.debug(
                     "Could not get a 404 page for %s", f"{domain}/page_not_found"
