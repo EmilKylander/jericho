@@ -36,3 +36,4 @@ class JerichoResult(Base):
     endpoint = Column(String(255))
     content = Column(Text)
     time_created = Column(DateTime(timezone=True), server_default=func.now())
+    id = Column(Integer, autoincrement=True, primary_key=True)
