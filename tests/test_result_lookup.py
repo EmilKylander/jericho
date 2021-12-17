@@ -23,6 +23,13 @@ def test_save_result():
     assert save is True
     assert result_lookup.find(workload_uuid, "https://example.com") is True
 
+def test_save_same_result_different_uuid():
+    result_lookup = ResultLookup(session)
+    workload_uuid = str(uuid.uuid4())
+    save = result_lookup.save(workload_uuid, "https://example.com", "contenthere")
+    assert save is True
+    assert result_lookup.save(str(uuid.uuid4()), "https://example.com", "content hereee") is True
+
 
 def test_save_result():
     result_lookup = ResultLookup(session)

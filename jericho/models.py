@@ -29,11 +29,10 @@ class JerichoProgress(Base):
     key = Column(String(255), primary_key=True)
     value = Column(String(255))
 
-
 class JerichoResult(Base):
     __tablename__ = "jericho_result"
 
-    workload_uuid = Column(String(36))
-    endpoint = Column(String(255), primary_key=True)
+    workload_uuid = Column(String(36), primary_key=True)
+    endpoint = Column(String(255))
     content = Column(Text)
     time_created = Column(DateTime(timezone=True), server_default=func.now())

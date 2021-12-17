@@ -105,6 +105,5 @@ class ThreadedAsyncHTTP:
 
     def start_bulk(self, domains: typing.List[str], batch_size: int) -> typing.Any:
         """Supply domains list to all the threads"""
-        loop = asyncio.new_event_loop()
-        loop.run_until_complete(self._run(domains, batch_size))
+        asyncio.run(self._run(domains, batch_size))
         self.finish_queue.put({"status": ThreadResponse.DONE.value})

@@ -1,3 +1,8 @@
+# 2021-12-17 - 0.2.1
+
+1. Added a Semaphore too avoid spawning more threads than what's specified
+2. Changed the JerichoResult to have a primary key on workload uuid instead of domain
+
 # 2021-12-15 - 0.2.0
 
 1. Refactored the threaded_async_http class to use a thread pool

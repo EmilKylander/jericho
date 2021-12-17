@@ -18,6 +18,7 @@ class AsyncHTTP:
         self.multimedia_content_types = ["audio", "image", "video", "font"]
         self.max_content_length = 1000000  # 1Mb
         self.max_retries = 1
+        self.sema = asyncio.Semaphore(1)
 
     def _is_multi_media(self, content_type: str) -> bool:
         """Check if content is a multi media"""
@@ -162,15 +163,14 @@ class AsyncHTTP:
         tasks = []
         settings = self._parse_settings(settings)
         settings["method"] = HttpRequestMethods.HEAD.value
-        async with ClientSession(
+        async with self.sema, ClientSession(
             connector=aiohttp.TCPConnector(
                 ssl=False, enable_cleanup_closed=True, force_close=True
             ),
             cookie_jar=aiohttp.DummyCookieJar(),
         ) as session:
             for link in links:
-                task = asyncio.ensure_future(self.bound_fetch(link, settings, session))
-                tasks.append(task)
+                tasks.append(self.bound_fetch(link, settings, session))
 
             responses = asyncio.gather(*tasks)
             results = await responses
@@ -185,15 +185,14 @@ class AsyncHTTP:
         tasks = []
         settings = self._parse_settings(settings)
         settings["method"] = HttpRequestMethods.GET.value
-        async with ClientSession(
+        async with self.sema, ClientSession(
             connector=aiohttp.TCPConnector(
                 ssl=False, enable_cleanup_closed=True, force_close=True
             ),
             cookie_jar=aiohttp.DummyCookieJar(),
         ) as session:
             for link in links:
-                task = asyncio.ensure_future(self.bound_fetch(link, settings, session))
-                tasks.append(task)
+                tasks.append(self.bound_fetch(link, settings, session))
 
             responses = asyncio.gather(*tasks)
             results = await responses
