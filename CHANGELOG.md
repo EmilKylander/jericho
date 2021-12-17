@@ -1,3 +1,7 @@
+# 2021-12-17 - 0.2.2
+
+1. Removed primary key on JerichoResult entirely
+
 # 2021-12-17 - 0.2.1
 
 1. Added a Semaphore too avoid spawning more threads than what's specified
