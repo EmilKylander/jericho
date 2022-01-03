@@ -1,4 +1,4 @@
-from jericho.plugin.async_http import AsyncHTTP, InvalidSetOfDomains
+from jericho.plugin.async_http import AsyncHTTP
 import pytest
 
 TEST_URL = "https://google.com"
@@ -38,26 +38,9 @@ class AsyncMockImage:
         return {"header": "value"}
 
 
-@pytest.mark.asyncio
-async def test__run_with_head(monkeypatch):
-    def mock_client_get(self, params, ssl, allow_redirects, timeout, headers):
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        return mock_response
-
-    async_http = AsyncHTTP()
-    monkeypatch.setattr("aiohttp.ClientSession.head", mock_client_get)
-    resp = await async_http.head(
-        [TEST_URL],
-        settings={
-            "status": 200,
-            "timeout": 5,
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
-            },
-        },
-    )
-    assert resp == [(TEST_URL, "", {"content-type": "text/html"})]
+class ClusterMock:
+    def send_job_message(self, _):
+        pass
 
 
 @pytest.mark.asyncio
@@ -67,64 +50,75 @@ async def test__run_with_get(monkeypatch):
         mock_response.status = 200
         return mock_response
 
-    async_http = AsyncHTTP()
+    cluster_mock = ClusterMock()
+
+    async_http = AsyncHTTP(
+        dns_cache={},
+        max_requests=10,
+        nameservers=["8.8.8.8"],
+        rank=1,
+        cluster=cluster_mock,
+    )
     monkeypatch.setattr("aiohttp.ClientSession.get", mock_client_get)
-    resp = await async_http.get([TEST_URL], settings={"status": 200, "timeout": 60})
-    assert resp == [(TEST_URL, "im alive!", {"content-type": "text/html"})]
+    async for entry in async_http.get(
+        [TEST_URL], settings={"status": 200, "timeout": 60}
+    ):
+        assert entry == (
+            TEST_URL,
+            "im alive!",
+            {"content-type": "text/html"},
+            "im alive!",
+        )
 
 
 @pytest.mark.asyncio
 async def test__run_with_get_ignore_image(monkeypatch):
-    def mock_client_get(self, params, ssl, allow_redirects, timeout):
+    def mock_client_get(self, params, ssl, allow_redirects, timeout, headers):
         mock_response = AsyncMockImage()
         mock_response.status = 200
+
         return mock_response
 
-    async_http = AsyncHTTP()
-    monkeypatch.setattr("aiohttp.ClientSession.get", mock_client_get)
-    resp = await async_http.get(
-        [TEST_URL], settings={"status": 200, "timeout": 5, "ignore_multimedia": True}
+    responses = []
+
+    cluster_mock = ClusterMock()
+
+    async_http = AsyncHTTP(
+        dns_cache={},
+        max_requests=10,
+        nameservers=["8.8.8.8"],
+        rank=1,
+        cluster=cluster_mock,
     )
-    assert resp == []
-
-
-@pytest.mark.asyncio
-async def test_should_not_be_ok_with_non_str_lists(monkeypatch):
-    def mock_client_get(self, params, ssl, allow_redirects, timeout):
-        mock_response = AsyncMockImage()
-        mock_response.status = 200
-        return mock_response
-
-    async_http = AsyncHTTP()
     monkeypatch.setattr("aiohttp.ClientSession.get", mock_client_get)
-    with pytest.raises(InvalidSetOfDomains) as e_info:
-        resp = await async_http.get(
-            ["https://google.com", None, "https://example.com"],
-            settings={"status": 200, "timeout": 5, "ignore_multimedia": True},
-        )
-
-
-@pytest.mark.asyncio
-async def test_should_not_be_ok_with_non_str_lists_as_head(monkeypatch):
-    def mock_client_get(self, params, ssl, allow_redirects, timeout):
-        mock_response = AsyncMockImage()
-        mock_response.status = 200
-        return mock_response
-
-    async_http = AsyncHTTP()
-    monkeypatch.setattr("aiohttp.ClientSession.get", mock_client_get)
-    with pytest.raises(InvalidSetOfDomains) as e_info:
-        resp = await async_http.head(
-            ["https://google.com", None, "https://example.com"],
-            settings={"status": 200, "timeout": 5, "ignore_multimedia": True},
-        )
+    async for entry in async_http.get(
+        [TEST_URL], settings={"status": 200, "timeout": 60, "ignore_multimedia": True}
+    ):
+        responses.append(entry)
+    assert responses == []
 
 
 def test__is_multi_media():
-    a = AsyncHTTP()
+    cluster_mock = ClusterMock()
+
+    a = AsyncHTTP(
+        dns_cache={},
+        max_requests=10,
+        nameservers=["8.8.8.8"],
+        rank=1,
+        cluster=cluster_mock,
+    )
     assert a._is_multi_media("image/png") is True
 
 
 def test__is_multi_media_false_with_html():
-    a = AsyncHTTP()
+    cluster_mock = ClusterMock()
+
+    a = AsyncHTTP(
+        dns_cache={},
+        max_requests=10,
+        nameservers=["8.8.8.8"],
+        rank=1,
+        cluster=cluster_mock,
+    )
     assert a._is_multi_media("text/html") is False

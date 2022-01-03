@@ -29,11 +29,39 @@ class JerichoProgress(Base):
     key = Column(String(255), primary_key=True)
     value = Column(String(255))
 
+
 class JerichoResult(Base):
     __tablename__ = "jericho_result"
 
     workload_uuid = Column(String(36))
     endpoint = Column(String(255))
     content = Column(Text)
+    time_created = Column(DateTime(timezone=True), server_default=func.now())
+    id = Column(Integer, autoincrement=True, primary_key=True)
+
+
+class JerichoHtml(Base):
+    __tablename__ = "jericho_html"
+
+    workload_uuid = Column(String(36))
+    endpoint = Column(String(255))
+    content = Column(Text)
+    headers = Column(Text)
+    time_created = Column(DateTime(timezone=True), server_default=func.now())
+    id = Column(Integer, autoincrement=True, primary_key=True)
+
+
+class JerichoServers(Base):
+    __tablename__ = "jericho_servers"
+
+    server = Column(String(255))
+    time_created = Column(DateTime(timezone=True), server_default=func.now())
+    id = Column(Integer, autoincrement=True, primary_key=True)
+
+
+class JerichoDnsServers(Base):
+    __tablename__ = "jericho_dns_servers"
+
+    server = Column(String(255))
     time_created = Column(DateTime(timezone=True), server_default=func.now())
     id = Column(Integer, autoincrement=True, primary_key=True)

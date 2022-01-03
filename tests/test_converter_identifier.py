@@ -14,7 +14,7 @@ def test_check_successful_conversion():
         "<b>my content here</b><title>testing</title><a href='tel:+46234234'>aa</a><a href='mailto:test@test.com'>asd</a><a href='https://yahoo.com'>asd</a><script>ga('create', 'trackingcode', 'auto');</script><meta name='description' content='desc'><meta name='generator' content='ametys'>",
     )
 
-    assert result["headers"] == "test: aaa"
+    assert result["headers"] == {"test": "aaa"}
     assert result["domain"] == "https://google.com"
     assert result["title"] == "testing"
     assert result["description"] == "desc"
@@ -54,7 +54,7 @@ def test_check_successful_conversion_with_version():
         "<b>my content here</b><title>testing</title><a href='tel:+46234234'>aa</a><a href='mailto:test@test.com'>asd</a><a href='https://yahoo.com'>asd</a><script>ga('create', 'trackingcode', 'auto');</script><meta name='description' content='desc'><meta name='generator' content='Wordpress 1.2.3'>",
     )
 
-    assert result["headers"] == "test: aaa"
+    assert result["headers"] == {"test": "aaa"}
     assert result["domain"] == "https://google.com"
     assert result["title"] == "testing"
     assert result["description"] == "desc"

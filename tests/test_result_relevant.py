@@ -1,6 +1,5 @@
 #!/bin/python3
 import uuid
-from jericho.plugin.async_http import AsyncHTTP
 from jericho.plugin.investigate import Investigate
 from jericho.plugin.diff import Diff
 from jericho.plugin.output_verifier import OutputVerifier
@@ -46,7 +45,6 @@ diff = Diff()
 investigate = Investigate()
 result_lookup = ResultLookup(session)
 cache_lookup = CacheLookup(session)
-async_http = AsyncHTTP()
 output_verifier = OutputVerifier()
 
 workload_uuid = str(uuid.uuid4())
@@ -57,7 +55,6 @@ result_relevant = ResultRelevant(
     investigate=investigate,
     result_lookup=result_lookup,
     cache_lookup=cache_lookup,
-    async_http=async_http,
     output_verifier=output_verifier,
     configuration={"max_result_and_404_percent_diff": 60},
     workload_uuid=workload_uuid,
@@ -68,7 +65,6 @@ result_relevant_with_cache = ResultRelevant(
     investigate=investigate,
     result_lookup=result_lookup,
     cache_lookup=cache_lookup,
-    async_http=async_http,
     output_verifier=output_verifier,
     configuration={"max_result_and_404_percent_diff": 60},
     workload_uuid=str(uuid.uuid4()),

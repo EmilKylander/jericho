@@ -1,13 +1,10 @@
 #!/bin/python3
-import types
 from jericho.enums.cluster_roles import ClusterRole
 from jericho.helpers import (
     load_yaml_file,
     logger_convert,
-    add_missing_schemes_to_domain_list,
     get_domain_from_endpoint,
-    parse_cluster_settings,
-    merge_array_to_iterator,
+    merge_domains_with_endpoints,
     chunks,
     split_array_by,
 )
@@ -49,83 +46,18 @@ def test_logger_convert_critical():
     assert logger_convert("critical") == 50
 
 
-def test_add_missing_schemes_to_domain_list_no_scheme():
-    assert add_missing_schemes_to_domain_list(["127.0.0.1"]) == [
-        "https://127.0.0.1",
-        "http://127.0.0.1",
-    ]
-
-
-def test_add_missing_schemes_to_domain_list_with_scheme():
-    assert add_missing_schemes_to_domain_list(["http://127.0.0.1"], True) == [
-        "https://127.0.0.1",
-        "http://127.0.0.1",
-    ]
-
-
-def test_add_missing_schemes_to_domain_list_with_scheme_multiple():
-    dup_array = ["http://127.0.0.1", "http://127.0.0.1"]
-    assert add_missing_schemes_to_domain_list(dup_array, True) == [
-        "https://127.0.0.1",
-        "http://127.0.0.1",
-    ]
-
-
-def test_add_missing_schemes_to_domain_list_with_scheme_no_double():
-    assert add_missing_schemes_to_domain_list(["http://127.0.0.1"]) == [
-        "http://127.0.0.1",
-    ]
-
-
-def test_add_missing_schemes_to_domain_list_with_scheme_multiple_no_double():
-    dup_array = ["http://127.0.0.1", "http://127.0.0.1"]
-    assert add_missing_schemes_to_domain_list(dup_array) == [
-        "http://127.0.0.1",
-    ]
-
-
 def test_get_domain_from_endpoint():
     assert get_domain_from_endpoint("https://google.com/asd") == "https://google.com"
 
 
-def test_parse_cluster_settings_replica():
-    assert parse_cluster_settings(1, 2) == ClusterRole.REPLICA
-
-
-def test_parse_cluster_settings_source():
-    assert parse_cluster_settings(0, 2) == ClusterRole.SOURCE
-
-
-def test_parse_cluster_settings_no_role():
-    assert parse_cluster_settings(0, 1) == ClusterRole.DISABLED
-
-
-def test_merge_array_to_iterator():
+def test_merge_domains_with_endpoints():
     arr1 = [{"endpoint": "/phpinfo.php"}, {"endpoint": "/test.php"}]
-    arr2 = [f"https://{i}" for i in range(0, 200)]
-    test = merge_array_to_iterator(arr1, arr2, domains_batch_size=100)
+    arr2 = [f"https://{i}" for i in range(0, 20)]
+    test = merge_domains_with_endpoints(arr1, arr2)
 
-    i = 0
-    for x in test:
-        if i == 0:
-            assert len(x) == 100
-            assert x == [f"https://{i}/phpinfo.php" for i in range(0, 100)]
-
-        if i == 1:
-            assert len(x) == 100
-            assert x == [f"https://{i}/phpinfo.php" for i in range(100, 200)]
-
-        if i == 2:
-            assert len(x) == 100
-            assert x == [f"https://{i}/test.php" for i in range(0, 100)]
-
-        if i == 3:
-            assert len(x) == 100
-            assert x == [f"https://{i}/test.php" for i in range(100, 200)]
-
-        i = i + 1
-
-    assert i == 4
+    assert len(test) == 40
+    assert test[0:20] == [f"https://{i}/phpinfo.php" for i in range(0, 20)]
+    assert test[20:40] == [f"https://{i}/test.php" for i in range(0, 20)]
 
 
 def test_chunks():

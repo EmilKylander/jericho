@@ -14,7 +14,7 @@ services:
      - apache
      - jericho-replica
   jericho-replica:
-    container_name: jericho-replica
+    container_name: jericho_replica
     build:
       context: ../../../
       dockerfile: tests/integration/test-cluster/replica/Dockerfile

@@ -1,3 +1,12 @@
+# 2021-12-19 - 0.3.0
+
+1. Added automatic Linode creations
+2. Removed threading and added a more efficient coroutine handling
+3. Added DNS server rotation with a default of the 14 most popular DNS servers
+4. Added a CLI argument to supply your own DNS server list
+5. Added uvloop for faster async operations
+6. Removed MPI and added added asyncssh and zeromq instead
+
 # 2021-12-17 - 0.2.2
 
 1. Removed primary key on JerichoResult entirely

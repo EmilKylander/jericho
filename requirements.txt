@@ -4,7 +4,6 @@ sqlalchemy
 python-Levenshtein-wheels
 mpi4py
 bs4
-aioretry
 async-http
 validate_email
 html2text
@@ -13,3 +12,9 @@ lxml
 python-Wappalyzer
 validators
 pytest
+aiosqlite
+aiodns
+uvloop
+asyncssh
+aiofiles
+pyzmq

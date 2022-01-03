@@ -21,7 +21,6 @@ This file is suppose to be run from the command line.
 
 #!/bin/python3
 import asyncio
-import queue
 import typing
 import sys
 import logging
@@ -33,28 +32,33 @@ import sqlalchemy
 import uuid
 import asyncio
 import json
-from mpi4py import MPI
-from sqlalchemy.orm import sessionmaker
+import aiosqlite
+import uvloop
 from threading import Thread
+from sqlalchemy.orm import sessionmaker
 from jericho.plugin.async_http import AsyncHTTP
 from jericho.plugin.investigate import Investigate
 from jericho.plugin.diff import Diff
 from jericho.plugin.output_verifier import OutputVerifier
 from jericho.plugin.result_is_relevant import ResultRelevant
 from jericho.plugin.notifications import Notifications
-from jericho.plugin.threaded_async_http import ThreadedAsyncHTTP
 from jericho.plugin.data_bucket import DataBucket
-from jericho.plugin.result import Result
+from jericho.plugin.linode import Linode
+from jericho.plugin.cloud import Cloud
+from jericho.plugin.cluster import Cluster
 from jericho.repositories.cache_lookup import CacheLookup
 from jericho.repositories.result_lookup import ResultLookup
 from jericho.repositories.endpoints_lookup import EndpointsLookup
+from jericho.repositories.html_lookup import HtmlLookup
+from jericho.repositories.dns_server_lookup import DnsServerLookup
+
 from jericho.converters.identifier import Identifier
-from jericho.plugin.result import Result
 
 from jericho.models import Base
 
 from jericho.enums.cluster_roles import ClusterRole
-from jericho.enums.thread_response import ThreadResponse
+from jericho.enums.http_codes import HttpStatusCode
+from jericho.enums.cluster_response_type import ClusterResponseType
 
 from jericho.cli import (
     import_endpoints,
@@ -64,14 +68,16 @@ from jericho.cli import (
     delete_endpoints,
     get_endpoints,
     upgrade,
+    pull_dns_servers,
 )
 
 from jericho.helpers import (
     load_yaml_file,
     logger_convert,
-    parse_cluster_settings,
-    split_array_by,
+    merge_domains_with_endpoints,
+    get_domain_from_endpoint,
 )
+from jericho.repositories.server_lookup import ServerLookup
 
 # Instantiate the parser
 parser = argparse.ArgumentParser(description="Optional app description")
@@ -107,12 +113,6 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--threads",
-    type=int,
-    help="Set the amount of threads. Default: 40",
-)
-
-parser.add_argument(
     "--input",
     type=str,
     help="The file with domains",
@@ -137,23 +137,94 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--batch-size",
-    action="store_true",
-    help="The size of the batch of domains that is sent simultaneously in an even loop per thread. Default 100",
-)
-
-parser.add_argument(
-    "--scan-both-schemes",
-    action="store_true",
-    help="Scan both the http and the https for the supplies domains",
-)
-
-parser.add_argument(
     "--converter",
     type=str,
     help="You can also use Jericho as a form of web scraper, you need to specify a converter. Currently 'identifier' is available, read the documentation for more information. When this flag is set no endpoints will be appended or processed.",
 )
 
+parser.add_argument(
+    "--nameservers",
+    type=str,
+    help="Jericho uses a default list with the 14 most popular DNS servers, you can use your own dns server list instead through a file. Round robin is enabled regardless",
+)
+
+parser.add_argument(
+    "--resolve-list",
+    type=str,
+    help="This is mostly good for benchmarking and testing, by giving a file with domain:ip format per line Jericho will inject this to the internal DNS cache and use it through out the program",
+)
+
+parser.add_argument(
+    "--max-requests",
+    type=int,
+    help="The maximum requests per second that the program will send, default 10,000",
+)
+
+parser.add_argument(
+    "--setup-linodes",
+    type=int,
+    help="Setup X amount of Linodes and automatically exchange public keys and install Jericho",
+)
+
+parser.add_argument(
+    "--delete-linodes",
+    action="store_true",
+    help="Deletes all Linodes prefixed with 'jericho'",
+)
+
+parser.add_argument(
+    "--ignore-cloud-duplicates",
+    action="store_true",
+    help="Add instances to cloud even though there's existing Jericho instances",
+)
+
+parser.add_argument(
+    "--get-linodes",
+    action="store_true",
+    help="Show all of the Linodes that is used for Jericho",
+)
+
+parser.add_argument(
+    "--add-server",
+    type=str,
+    help="Add a server to the server list, use like --add-server 1.2.3.4",
+)
+
+parser.add_argument(
+    "--remove-server",
+    type=str,
+    help="Remove a server to the server list, use like --remove-server 1.2.3.4",
+)
+
+parser.add_argument(
+    "--remove-servers",
+    type=str,
+    help="Remove all servers to the server list",
+)
+
+parser.add_argument(
+    "--get-servers",
+    action="store_true",
+    help="Get the servers",
+)
+
+parser.add_argument(
+    "--use-servers",
+    action="store_true",
+    help="Use the servers when scanning",
+)
+
+parser.add_argument(
+    "--include-master",
+    action="store_true",
+    help="This includes the source computer in the scanning",
+)
+
+parser.add_argument(
+    "--listen",
+    action="store_true",
+    help="Start a Jericho replica that will listen for jobs",
+)
 
 HOME = str(Path.home())
 
@@ -171,13 +242,6 @@ ignore_multimedia: true"""
     f.write(default_configuration)
     f.close()
 
-comm = MPI.COMM_WORLD
-mpi_size = comm.Get_size()
-rank = comm.Get_rank()
-
-# Suppress aiohttp ssl errors..
-logging.getLogger("asyncio").setLevel(logging.CRITICAL)
-
 configuration = load_yaml_file(f"{HOME}/jericho/configuration.yml")
 
 engine = sqlalchemy.create_engine(configuration["jericho_database"])
@@ -185,30 +249,40 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
 
+
+server_lookup = ServerLookup(session)
+
+args = parser.parse_args()
+
+servers = []
+if args.use_servers:
+    servers = server_lookup.get()
+    if len(servers) == 0:
+        logging.error("No servers in the database, quitting..")
+        sys.exit(1)
+
+cluster = Cluster(servers=servers)
+
+cluster_size = len(servers)
+
+cluster_role = ClusterRole.DISABLED
+if args.use_servers:
+    cluster_role = ClusterRole.SOURCE
+if args.listen:
+    cluster_role = ClusterRole.REPLICA
+
 log_level = logger_convert(configuration.get("log_level", "info"))
-
-
-class RankFilter(logging.Filter):
-    """This class adds so we can have the cluster rank in the logging"""
-
-    rank = rank
-
-    def filter(self, record):
-        record.rank = f"SERVER-RANK-{RankFilter.rank}"
-        return True
 
 
 class ClusterFilter(logging.Filter):
     """This class adds so we can have the cluster role in the logging"""
 
-    cluster = parse_cluster_settings(rank, mpi_size)
+    cluster = cluster_role
 
     def filter(self, record):
         record.cluster = ClusterFilter.cluster
         return True
 
-
-cluster_role = parse_cluster_settings(rank, mpi_size)
 
 args = parser.parse_args()
 
@@ -220,50 +294,176 @@ else:
 
 handler = logging.StreamHandler(sys.stdout)
 handler.addFilter(ClusterFilter())
-handler.addFilter(RankFilter())
 
-if cluster_role != ClusterRole.DISABLED:
-    formatter = logging.Formatter(
-        "%(asctime)s - %(cluster)s - %(rank)s - %(name)s - %(levelname)s - %(message)s"
-    )
-else:
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 handler.setFormatter(formatter)
 root.addHandler(handler)
 
-async_http = AsyncHTTP()
+
+NAMESERVERS = []
+DNS_CACHE = {}
+MAX_REQUESTS = 10000
+
+if args.max_requests:
+    MAX_REQUESTS = args.max_requests
+
+if args.nameservers:
+    with open(args.nameservers, encoding="utf-8") as file:
+        lines = file.readlines()
+        NAMESERVERS = [nameserver.strip() for nameserver in lines]
+
+if args.resolve_list:
+    with open(args.resolve_list, encoding="utf-8") as file:
+        lines = file.readlines()
+        for entry in lines:
+            domain, ip = entry.split(":")
+            DNS_CACHE[domain.strip()] = ip.strip()
+    logging.debug("Loaded %s domains into dns cache", DNS_CACHE)
+
+if args.listen:
+    cluster.start_zmq_server()
+    cluster.start_zmq_subscribe_server()
+
 endpoints_lookup = EndpointsLookup(session)
 investigate = Investigate()
 cache_lookup = CacheLookup(session)
 result_lookup = ResultLookup(session)
+html_lookup = HtmlLookup(session)
+dns_server_lookup = DnsServerLookup(session)
+
 output_verifier = OutputVerifier()
 diff = Diff()
 data_bucket = DataBucket(max_size=100000)  # 100kB
-
-BATCH_SIZE = 100 if args.batch_size is not None else args.batch_size
-AMOUNT_OF_THREADS = 40
-if args.threads:
-    AMOUNT_OF_THREADS = args.threads
 
 CONVERTERS = {"identifier": Identifier()}
 if args.input:
     input = args.input
 
 
-def execute(payload: tuple) -> list:
-    """This is the main module which will handle all execution"""
-
-    logging.info(
-        f"Using {BATCH_SIZE} as batch size and {AMOUNT_OF_THREADS} amount of threads"
+async def start_aiohttp_loop(
+    send_domains: typing.List,
+    endpoints: typing.List,
+    settings: dict,
+    nameservers: typing.List[str],
+    rank: int,
+    dns_cache: typing.List,
+):
+    async_http = AsyncHTTP(
+        nameservers=nameservers,
+        dns_cache=dns_cache,
+        max_requests=MAX_REQUESTS,
+        cluster=cluster,
+        rank=rank,
     )
 
-    finish_queue: queue.Queue = queue.Queue()
-    workload_uuid, configuration, endpoints, domains = payload
+    logging.debug("Merging domains and endpoints")
+    if not args.converter:
+        send_domains = merge_domains_with_endpoints(endpoints, send_domains)
+
+    workload_uuid = settings.get("workload_uuid")
+    logging.debug("Starting async loop")
+    async for url, html, headers, not_found_html in async_http.get(
+        send_domains,
+        settings={
+            "status": HttpStatusCode.OK.value,
+            "timeout": configuration.get("max_get_timeout"),
+            "ignore_multimedia": configuration.get("ignore_multimedia"),
+            "headers": {"User-Agent": "test"},
+        },
+    ):
+        if url is None:
+            continue
+        while True:
+            try:
+                logging.info("Saving output for %s", url)
+
+                logging.debug(
+                    "Accessing database sqlite:///%s/jericho/jericho.db", HOME
+                )
+                db = await aiosqlite.connect(f"/{HOME}/jericho/jericho.db")
+
+                # Using aiosqlite for inserts because we are in an event loop right now and should therefore optimize the speed
+                cursor = await db.execute(
+                    "INSERT OR IGNORE INTO jericho_html(workload_uuid, endpoint, content, headers) VALUES(?, ?, ?, ?)",
+                    (workload_uuid, url, html, json.dumps(dict(headers))),
+                )
+                await db.commit()
+
+                cursor = await db.execute(
+                    "INSERT OR IGNORE  INTO jericho_404_caches(domain, content) VALUES(?, ?)",
+                    (get_domain_from_endpoint(url), not_found_html),
+                )
+                await db.commit()
+
+                await cursor.close()
+
+                break
+            except Exception as err:
+                logging.exception(
+                    "Could not save %s to database tables because of error: %s",
+                    url,
+                    err,
+                )
+                await db.rollback()
+            finally:
+                await db.close()
+
+
+def receiver(cluster: Cluster):
+    engine = sqlalchemy.create_engine(configuration["jericho_database"])
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    result_lookup = ResultLookup(session)
+
+    logging.info("Waiting for result messages..")
+    for response in cluster.receive_zmq_message():
+        if response.get("type") == ClusterResponseType.RESULT.value:
+            logging.info("Saving url %s to source database", response.get("endpoint"))
+            result_lookup.save(
+                response.get("workload_uuid"),
+                response.get("endpoint"),
+                response.get("content"),
+            )
+
+        if response.get("type") == ClusterResponseType.STATISTICS.value:
+            logging.info(
+                "Statistics (Rank %s) | Requests per second: %s - Domain size: %s - Active requests: %s - Finished Requests: %s",
+                response.get("rank"),
+                response.get("rps"),
+                response.get("domain_list_size"),
+                response.get("active_requests"),
+                response.get("finished_requests"),
+            )
+
+
+def execute(
+    domains: typing.List[str],
+    workload_uuid: uuid.uuid4,
+    nameservers: typing.List[str],
+    configuration: dict,
+    rank: int,
+    endpoints: typing.List,
+    dns_cache: typing.List,
+):
+    """This is the main module which will handle all execution"""
+
+    uvloop.install()
+
     notifications_configuration = configuration.get("notifications")
     converter_configuration = configuration.get("converter_notifications")
+
+    result_relevant = ResultRelevant(
+        investigate=investigate,
+        result_lookup=result_lookup,
+        cache_lookup=cache_lookup,
+        diff=diff,
+        output_verifier=output_verifier,
+        configuration=configuration,
+        workload_uuid=workload_uuid,
+    )
 
     # The class is instantiated here because the payload contain the
     # relevant notifications settings
@@ -276,150 +476,172 @@ def execute(payload: tuple) -> list:
     if converter_configuration:
         converter_notifications = Notifications(converter_configuration)
 
-    if len(endpoints) == 0:
-        logging.error("No endpoint patterns was supplied")
-        return []
-
     total_sites = len(domains)
     logging.info("Got %s amount of domains", total_sites)
-    should_scan_both_schemes = args.scan_both_schemes
 
-    total_endpoints = total_sites * len(endpoints)
-
-    if should_scan_both_schemes:
-        logging.info("Scanning both http and https")
-        total_endpoints = total_endpoints * 2
-
-    threaded_async_http = ThreadedAsyncHTTP(
-        async_http,
-        AMOUNT_OF_THREADS,
-        configuration,
-        finish_queue,
-        should_scan_both_schemes=should_scan_both_schemes,
-        ignore_endpoints=args.converter,
-        endpoints=endpoints,
-    )
-
-    result_relevant = ResultRelevant(
-        investigate=investigate,
-        result_lookup=result_lookup,
-        cache_lookup=cache_lookup,
-        async_http=async_http,
-        diff=diff,
-        output_verifier=output_verifier,
-        configuration=configuration,
-        workload_uuid=workload_uuid,
-    )
-
-    result = Result(
-        result_relevant,
-        notifications_configuration,
-        notifications,
-        cluster_role,
-        result_lookup,
-        workload_uuid,
-    )
-
-    p = Thread(
-        target=threaded_async_http.start_bulk,
-        args=(
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(
+        start_aiohttp_loop(
             domains,
-            BATCH_SIZE,
-        ),
+            endpoints,
+            settings={
+                "workload_uuid": workload_uuid,
+                "converter_notifications": converter_notifications,
+                "notifications": notifications,
+            },
+            nameservers=nameservers,
+            rank=rank,
+            dns_cache=dns_cache,
+        )
     )
-    p.start()
 
-    while True:
-        # We are using a queue to respond with the data so we're not blocking the threads when we parse the results
-        queue_payload = finish_queue.get()
-        if queue_payload.get("status") == ThreadResponse.DONE.value:
-            logging.info("Finished")
+    if args.converter:
+        for record_chunk in html_lookup.get_all(workload_uuid):
+            for record in record_chunk:
+                logging.debug("Running the converter on %s", record.endpoint)
+                result = CONVERTERS.get(args.converter).run(
+                    "", record.endpoint, 200, json.loads(record.headers), record.content
+                )
+                logging.info("Parsed %s - Title: %s", record.endpoint, result["title"])
 
-            # When the scan is complete we need to pull the domains back from all replicas db.
-            # However if we're running as ClusterRole.SOURCE or ClusterRole.DISABLED then
-            # we already have it in our database.
-            if cluster_role == ClusterRole.REPLICA:
-                results = result_lookup.get(workload_uuid)
-                result_lookup.delete_workload(workload_uuid)
-                return results
-            else:
-                return []
+                if not converter_configuration:
+                    continue
 
-        url = queue_payload.get("url")
-        html = queue_payload.get("html")
-        headers = queue_payload.get("headers")
+                data_bucket.save(result)
 
-        # We might want to get the actual data from the domains in a serialized form
-        if args.converter:
-            logging.debug("Running the converter on parsing %s", url)
-            result = CONVERTERS.get(args.converter).run("", url, 200, headers, html)
-            logging.info("Parsed %s - Title: %s", url, result["title"])
-            data_bucket.save(result)
-
-            if data_bucket.is_full():
-                # Send the notifications for the converter
-                logging.debug("Sending notifications")
-                if converter_notifications:
+                if data_bucket.is_full():
+                    # Send the notifications for the converter
+                    logging.debug("Sending notifications")
                     asyncio.run(
                         converter_notifications.run_all(json.dumps(data_bucket.get()))
                     )
-                data_bucket.empty()
+                    data_bucket.empty()
 
-            logging.debug("Sent all notifications")
+        logging.debug("Sent all notifications")
+        return []
 
-            # The rest of the function analyzes endpoints, there's no point to keep it running
-            continue
+    for record_chunk in html_lookup.get_all(workload_uuid):
+        for record in record_chunk:
+            if not result_relevant.check(record.endpoint, record.content, endpoints):
+                continue
 
-        logging.debug("Analyzing the responses")
-        result.process(url, html, endpoints)
+            if notifications:
+                logging.debug("Sending the notifications..")
+                asyncio.run(notifications.run_all(record.url))
+
+            logging.debug("Saving result..")
+            if (
+                cluster_role == ClusterRole.SOURCE and not args.use_servers
+            ) or cluster_role == ClusterRole.DISABLED:
+                result_lookup.save(workload_uuid, record.endpoint, record.content)
+
+            if cluster_role == ClusterRole.REPLICA:
+                logging.info("Sending endpoint %s to source", record.endpoint)
+                cluster.send_zmq_message(
+                    json.dumps(
+                        {
+                            "type": ClusterResponseType.RESULT.value,
+                            "workload_uuid": workload_uuid,
+                            "endpoint": record.endpoint,
+                            "content": record.content,
+                        }
+                    )
+                )
+
+    if cluster_role == ClusterRole.REPLICA:
+        cluster.send_zmq_message(ClusterResponseType.FINISHED.value)
+        return True
+
+    # When the scan is complete we need to pull the domains back from all replicas db.
+    # However if we're running as ClusterRole.SOURCE or ClusterRole.DISABLED then
+    # we already have it in our database.
+    return result_lookup.get(workload_uuid)
 
 
 def run() -> None:
     """This initializes the business logic"""
-    data = None
-    if rank == 0:
-        logging.debug("Getting domains from --input...")
-        if not os.path.exists(input):
-            logging.error("The path %s does not exist!", input)
-            return None
+    global NAMESERVERS
 
-        with open(input, encoding="utf-8") as file:
-            lines = file.readlines()
-            domains_loaded = [domain.strip() for domain in lines]
+    if not args.nameservers and not args.resolve_list:
+        logging.info("Updating DNS servers if there is a new update")
+        original_dns_servers = dns_server_lookup.get_all()
+        dns_servers = asyncio.run(pull_dns_servers(original_dns_servers))
+        if dns_servers:
+            dns_server_lookup.delete_all()
+            for server in dns_servers:
+                dns_server_lookup.save(server)
 
-        logging.debug("Scattering domains into %s chunks..", mpi_size)
-        rows = split_array_by(domains_loaded, mpi_size)
+        NAMESERVERS = dns_server_lookup.get_all()
 
-        # Get the sources notifications settings so we can send it to the replicas
+        logging.info("Got %s dns servers", len(NAMESERVERS))
 
-        endpoints_from_database = endpoints_lookup.get()
-        workload_uuid = str(uuid.uuid4())
-        logging.info("Using workload uid %s", workload_uuid)
-        data = [
-            (workload_uuid, configuration, endpoints_from_database, row) for row in rows
-        ]
+    logging.debug("Getting domains from --input...")
+    if not os.path.exists(input):
+        logging.error("The path %s does not exist!", input)
+        return None
 
-        logging.debug("Done scattering domains (%s chunks)..", len(data))
+    with open(input, encoding="utf-8") as file:
+        lines = file.readlines()
+        domains_loaded = [domain.strip() for domain in lines]
 
-    data = comm.scatter(data, root=0)
+    # Get the sources notifications settings so we can send it to the replicas
 
-    logging.info(
-        "Starting with %s threads and %s batch size", AMOUNT_OF_THREADS, BATCH_SIZE
-    )
+    endpoints_from_database = endpoints_lookup.get()
+    workload_uuid = str(uuid.uuid4())
+    logging.info("Using workload uuid %s", workload_uuid)
 
-    data = execute(data)
+    if args.use_servers:
+        if len(servers) == 0:
+            logging.error(
+                "You can not run Jericho with servers if the server list is empty"
+            )
+            sys.exit(1)
+        else:
+            thread = Thread(target=receiver, args=(cluster,))
+            thread.start()
+
+            asyncio.run(
+                cluster.scatter(
+                    workload_uuid,
+                    configuration,
+                    endpoints_from_database,
+                    domains_loaded,
+                    NAMESERVERS,
+                    DNS_CACHE,
+                )
+            )
+
+    if not args.use_servers or (args.use_servers and args.include_master):
+        logging.info("Scraping domains from the %s", cluster_role)
+        endpoints = []
+        if not args.converter:
+            endpoints = endpoints_lookup.get()
+            if len(endpoints) == 0:
+                logging.error("No endpoint patterns was supplied")
+                return []
+
+        execute(
+            domains_loaded,
+            workload_uuid,
+            NAMESERVERS,
+            configuration,
+            rank=0,
+            endpoints=endpoints,
+            dns_cache=DNS_CACHE,
+        )
 
     # Combine all of the replica results and save it to the ClusterRole.SOURCE database
-    data = comm.gather(data, root=0)
-
-    # Only the source should gather the data
     if cluster_role == ClusterRole.SOURCE:
-        for response in data:
-            for url, output in response:
-                logging.info("Saving url %s to source database", url)
-                result_lookup.save(workload_uuid, url, output)
+        thread.join()
+    else:
+        logging.debug(
+            "Skipping waiting on result because of cluster role %s", cluster_role
+        )
+
+    logging.info("Done!")
 
 
+# TODO: Does it clear everything on the replicas?
 def main() -> typing.Any:
     """The main module"""
 
@@ -446,3 +668,62 @@ def main() -> typing.Any:
 
     if args.input is not None:
         run()
+
+    if args.listen:
+        cluster.listen_for_jobs(callback=execute)
+
+    if args.add_server:
+        if not args.add_server in server_lookup.get():
+            logging.info("Adding server %s to Jericho", args.add_server)
+            server_lookup.save(args.add_server)
+        else:
+            logging.info("Not adding server %s because of duplicate", args.add_server)
+
+    if args.remove_server:
+        server_lookup.delete(args.remove_server)
+
+    if args.get_servers:
+        for server in server_lookup.get():
+            print(server)
+
+    if args.setup_linodes:
+        if not configuration.get("linode_token"):
+            logging.error("Please specify a linode_token in your configuration file")
+            return False
+
+        cloud = Cloud(provider=Linode({"token": configuration.get("linode_token")}))
+
+        if (
+            len(asyncio.run(cloud.get_instances())) > 0
+            and not args.ignore_cloud_duplicates
+        ):
+            logging.error(
+                "Jericho instances is already created. To delete them use jericho --delete-linodes or run jericho --ignore-cloud-duplicates"
+            )
+            return False
+
+        servers = asyncio.run(cloud.setup(args.setup_linodes))
+        for server in servers:
+            server_lookup.save(server)
+        print(
+            f"We have created {len(servers)} linodes and installed Jericho. To use them run jericho --use-servers --input yourdomainlist.txt"
+        )
+
+    if args.delete_linodes:
+        logging.info("Deleting linodes...")
+        cloud = Cloud(provider=Linode({"token": configuration.get("linode_token")}))
+        asyncio.run(cloud.delete_instances())
+        logging.info("Done")
+
+    if args.get_linodes:
+        if not configuration.get("linode_token"):
+            logging.error("Please specify a linode_token in your configuration file")
+            return False
+
+        cloud = Cloud(provider=Linode({"token": configuration.get("linode_token")}))
+
+        resp = asyncio.run(cloud.get_instances(show_all=True))
+        for instance in resp:
+            print(instance)
+
+        logging.info("Found %s Jericho instances", len(resp))

@@ -1,6 +1,5 @@
 #!/bin/python3
 import logging
-import typing
 from jericho.plugin.output_verifier import OutputVerifier
 
 

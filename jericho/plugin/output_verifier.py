@@ -7,7 +7,6 @@ format that we expect it to be.
 """
 #!/bin/python3
 import logging
-import json
 import yaml
 from bs4 import BeautifulSoup
 from jericho.enums.pattern_types import PatternTypes

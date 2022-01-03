@@ -2,6 +2,8 @@ import os
 import typing
 import json
 import logging
+import aiohttp
+from datetime import datetime
 from aiohttp import ClientSession
 
 from jericho.models import JerichoEndpoints
@@ -72,3 +74,40 @@ def get_endpoints(endpoints_lookup: EndpointsLookup) -> typing.Any:
     """This prints out all of the results we have in our database"""
     for endpoint in endpoints_lookup.get():
         print(f"{endpoint['endpoint']}\t{endpoint['pattern']}")
+
+
+async def pull_dns_servers(servers: list) -> typing.Optional[list]:
+    async with ClientSession(
+        connector=aiohttp.TCPConnector(
+            ssl=False,
+            enable_cleanup_closed=True,
+            force_close=True,
+        ),
+        cookie_jar=aiohttp.DummyCookieJar(),
+    ) as session:
+        async with session.get(
+            "https://api.github.com/repos/cxosmo/dns-resolvers",
+            ssl=False,
+            allow_redirects=True,
+            timeout=10,
+        ) as response:
+            list_bytes = await response.read()
+            github_api_response = json.loads(list_bytes.decode("utf-8", "ignore"))
+            last_updated = datetime.strptime(
+                github_api_response.get("updated_at"), "%Y-%m-%dT%H:%M:%SZ"
+            )
+
+        days = (datetime.now() - last_updated).days
+        print(days)
+        if days == 0 and not len(servers) == 0:
+            return None
+
+        async with session.get(
+            "https://raw.githubusercontent.com/cxosmo/dns-resolvers/main/resolvers.txt",
+            ssl=False,
+            allow_redirects=True,
+            timeout=10,
+        ) as response:
+            list_bytes = await response.read()
+            list_str = list_bytes.decode("utf-8", "ignore")
+            return [server for server in list_str.split("\n") if not server == ""]

@@ -3,7 +3,6 @@ import logging
 import typing
 import html2text
 import re
-import gc
 import html
 import validators
 from bs4 import BeautifulSoup
@@ -47,7 +46,9 @@ class Identifier:
             )
         except Exception as err:
             logging.warning(
-                f"Could not get the meta description from {url} because of error {err}"
+                "Could not get the meta description from %s because of error %s",
+                url,
+                err,
             )
             return ""
 
@@ -134,15 +135,12 @@ class Identifier:
 
         return techs
 
-    def run(
-        self, ip: str, url: str, status: int, headers: dict, site_html: str
-    ) -> dict:
+    def run(self, ip: str, url: str, status: int, headers: str, site_html: str) -> dict:
         wappalyzer = Wappalyzer.latest()
 
         soup = BeautifulSoup(site_html, "lxml")
         contact_info = self._get_contact_info(soup)
         techs = self._get_technologies(url, site_html, headers, wappalyzer)
-        headers = "\n".join([f"{key}: {val}" for key, val in headers.items()])
 
         return {
             "status": status,

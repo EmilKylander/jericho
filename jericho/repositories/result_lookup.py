@@ -75,13 +75,15 @@ class ResultLookup:
     def delete_workload(self, workload_uuid: uuid.uuid4) -> bool:
         """Delete all result"""
         try:
-            self.session.query(JerichoResult) \
-                .filter(
-                    JerichoResult.workload_uuid == workload_uuid
-                ) \
-                .delete()
+            self.session.query(JerichoResult).filter(
+                JerichoResult.workload_uuid == workload_uuid
+            ).delete()
             self.session.commit()
             return True
         except Exception as err:
-            logging.warning("Could not delete workload uuid %s records because of error %s", workload_uuid, err)
+            logging.warning(
+                "Could not delete workload uuid %s records because of error %s",
+                workload_uuid,
+                err,
+            )
             return False

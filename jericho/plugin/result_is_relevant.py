@@ -1,10 +1,8 @@
 import logging
 import typing
-import asyncio
 import uuid
 from jericho.helpers import get_domain_from_endpoint
 from jericho.plugin.investigate import Investigate
-from jericho.plugin.async_http import AsyncHTTP
 from jericho.plugin.diff import Diff
 from jericho.plugin.output_verifier import OutputVerifier
 from jericho.repositories.result_lookup import ResultLookup
@@ -17,7 +15,6 @@ class ResultRelevant:
         investigate: Investigate,
         result_lookup: ResultLookup,
         cache_lookup: CacheLookup,
-        async_http: AsyncHTTP,
         diff: Diff,
         output_verifier: OutputVerifier,
         configuration: dict,
@@ -28,7 +25,6 @@ class ResultRelevant:
         self.result_lookup = result_lookup
         self.cache_lookup = cache_lookup
         self.output_verifier = output_verifier
-        self.async_http = async_http
         self.diff = diff
         self.configuration = configuration
         self.workload_uuid = workload_uuid
@@ -49,6 +45,7 @@ class ResultRelevant:
         Identify if a result is relevant based if the result has been found before,
         and if the 404 page and the result is too similar, if it is then disregard it
         """
+
         domain = get_domain_from_endpoint(url)
         logging.debug("Running investigation on %s", url)
         pattern = self._get_endpoint_from_url(url, endpoints)
@@ -63,79 +60,50 @@ class ResultRelevant:
         if self.result_lookup.find(self.workload_uuid, url):
             return False
 
-        (
-            domain_is_found_in_404_cache,
-            cache_content,
-        ) = self.cache_lookup.find_domain(domain)
-
-        # Check if the 404 page exists in the cache, else make a real time request
-        logging.debug("Checking if %s exists in cache..", url)
-        if not domain_is_found_in_404_cache:
-            logging.debug(
-                "Could not find %s in cache, sending a request..",
-                f"{domain}/page_not_found.html",
-            )
-            loop = asyncio.new_event_loop()
-            page_not_found_res = loop.run_until_complete(
-                self.async_http.get(
-                    [f"{domain}/page_not_found.html"],
-                    settings={
-                        "timeout": 60,
-                        "headers": {
-                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
-                        },
-                    }
-                ),
-            )
-            loop.close()
-            if len(page_not_found_res) == 0:
-                logging.debug(
-                    "Could not get a 404 page for %s", f"{domain}/page_not_found"
-                )
-                return False
-
-            _, cache_content, _ = page_not_found_res[0]
-
-            self.cache_lookup.save_content(domain, cache_content)
-        else:
-            logging.debug(
-                "Using 404 page %s from cache", f"{domain}/page_not_found.html"
-            )
+        # The 404 page is always saved when we save potential results
+        _, cache_content = self.cache_lookup.find_domain(domain)
 
         # Check if the content type of the result is the same as the "not found" page
         not_found_page_content_analysis = self.output_verifier.find_content_type(
             cache_content
         )
 
-        # Check how much the result content and the 404 content differ in percentage
+        logging.debug("pattern: %s", pattern)
+        logging.debug("404 content type: %s", not_found_page_content_analysis)
+
+        # Check if the pattern type is the same on result and 404 page, but only if it's a content type and not a search string
         result_and_404_too_different = False
         if (
             not_found_page_content_analysis == pattern
             and pattern not in self.output_verifier.formats()
         ):
-            logging.debug("Analyzing the text difference for url %s", url)
-            result_and_404_content_procent_diff = self.diff.check(output, cache_content)
             logging.debug(
-                "We analyzed the text difference between endpoint %s and a 404 page. Difference: %s%%",
+                "The result content type was %s for %s and the 'not found' page content type was %s, skipping comparing them",
+                pattern,
+                url,
+                not_found_page_content_analysis,
+            )
+            return False
+
+        logging.debug("Analyzing the text difference for url %s", url)
+        result_and_404_content_procent_diff = self.diff.check(output, cache_content)
+        logging.debug(
+            "We analyzed the text difference between endpoint %s and a 404 page. Difference: %s%%",
+            url,
+            result_and_404_content_procent_diff,
+        )
+
+        # Check if the percentage difference between the result
+        # and the 404 page is larger than acceptable
+        if result_and_404_content_procent_diff <= self.configuration.get(
+            "max_result_and_404_percent_diff"
+        ):
+            logging.debug(
+                "Skipping analyzing content for %s because the difference in content is %s%%",
                 url,
                 result_and_404_content_procent_diff,
             )
-
-            # Check if the percentage difference between the result
-            # and the 404 page is larger than acceptable
-            if result_and_404_content_procent_diff <= self.configuration.get(
-                "max_result_and_404_percent_diff"
-            ):
-                logging.debug(
-                    "Skipping analyzing content for %s because the difference in content is %s%%",
-                    url,
-                    result_and_404_content_procent_diff,
-                )
-                result_and_404_too_different = True
-        else:
-            logging.debug(
-                f"The result content type was {pattern} for {url} and the 'not found' page content type was {not_found_page_content_analysis}, skipping comparing them"
-            )
+            result_and_404_too_different = True
 
         if not result_and_404_too_different:
             logging.info("Found endpoint %s", url)

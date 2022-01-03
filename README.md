@@ -30,7 +30,7 @@
 ## What is The Jericho?
 
 The Jericho is a program written in Python 3.8.10 with clustering capabilities through
-```Message Passing Interface``` (MPI). The purpose is to have a scanner that checks a list of
+AsyncSSH and ZeroMQ. The purpose is to have a scanner that checks a list of
 domains for a list of exposed configuration files, git directory, development files et cetera.
 
 The problem that I had while performing such a task was the enormous volume of data that was
@@ -48,11 +48,11 @@ respond with "not found" pages and how to properly identify the real result.
 
 ### Pip
 
-```$ sudo apt install libopenmpi-dev && pip3 install jericho```
+```$ pip3 install jericho```
 
 ### From source
 
-```$ sudo apt install libopenmpi-dev && pip3 install .```
+```$ pip3 install .```
 
 ## How to add endpoints
 
@@ -69,19 +69,35 @@ Simply add the --input flag to jericho containing all of the domains:
 
 ## How to use in a cluster
 
-The fundamental task for getting this to work in a cluster is installing
-Message Passing Interface (MPI). Once this is installed you're pretty much finished.
+The fundamental task for getting this done is exchanging ssh keys for your servers that you're gonna use and
+then add them to Jericho.
 
 Run the following to run it in a cluster:
-```mpirun -n *server amount* -hostfile *host file* jericho --input your_domains.txt```
+```
+jericho --add-server 1.2.3.4
+jericho --input your_domains.txt --use-servers
+```
 
-That's it!
+Note: Jericho needs to be installed on those servers, if you don't want to set that up you can look at the next method.
+
+## How to create a cluster in Linode through Jericho
+
+First you need to create an account on Linode and create a personal token, then you need to save it in the Jericho directory located in
+/home/your username/jericho. 
+
+```
+linode_token: yourlinodetokenhere
+```
+
+Then you can run the following to create e.g 10 Nanodes: ```jericho --setup-linodes 10```
+
+Now you're done! You can list them through ```jericho --get-servers``` and you can even SSH into them
+because Jericho has exchanged the ssh keys, just run ```ssh root@iphere```` and you're logged in to
+the server.
+
+To use the servers when scanning just run ```jericho --input yourdomainlist.txt --use-servers```
 
 ## Notifications
-
-Jericho does not save results until after the program is finished, this is because of the
-scatter-gather architecture. To solve this we have added the capability of running HTTP calls when a result
-has been found. This is configurable in your configuration file.
 
 This is an example of sending a request to Slack:
 
@@ -230,7 +246,7 @@ docker run -d \
 
 Now put your SonarQube access token and put it in ```.env``` like so:
 
-```SONARQUBE_API=aaaaaaaaaaaaaa```
+```SONARQUBE_TOKEN=aaaaaaaaaaaaaa```
 
 
 Run static code analysis:
