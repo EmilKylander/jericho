@@ -140,7 +140,7 @@ class Cluster:
 
             asyncio.ensure_future(
                 self.start_jericho_on_replica(
-                    workload_uuid, internal_data, rank, self.servers[index], dns_cache
+                    workload_uuid, internal_data, rank, self.servers[index], dns_cache, converter
                 )
             )
             rank = rank + 1
