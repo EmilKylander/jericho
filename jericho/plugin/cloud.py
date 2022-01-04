@@ -42,7 +42,7 @@ class Cloud:
                             "echo root             soft    nofile          50000 >> /etc/security/limits.conf"
                         )
                         await conn.run("ulimit -n 50000")
-                        await conn.run("nohup jericho --listen &")
+                        await conn.run("nohup jericho --listen > /root/jericho.log 2>&1 &")
                         self.instances.append(instance["resp"]["ipv4"][0])
                         return True
             except Exception as err:

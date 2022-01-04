@@ -368,8 +368,7 @@ async def start_aiohttp_loop(
         settings={
             "status": HttpStatusCode.OK.value,
             "timeout": configuration.get("max_get_timeout"),
-            "ignore_multimedia": configuration.get("ignore_multimedia"),
-            "headers": {"User-Agent": "test"},
+            "ignore_multimedia": configuration.get("ignore_multimedia")
         },
     ):
         if url is None:
@@ -585,8 +584,10 @@ def run() -> None:
         domains_loaded = [domain.strip() for domain in lines]
 
     # Get the sources notifications settings so we can send it to the replicas
+    endpoints_from_database = []
+    if not args.converter:
+        endpoints_from_database = endpoints_lookup.get()
 
-    endpoints_from_database = endpoints_lookup.get()
     workload_uuid = str(uuid.uuid4())
     logging.info("Using workload uuid %s", workload_uuid)
 
@@ -640,8 +641,6 @@ def run() -> None:
 
     logging.info("Done!")
 
-
-# TODO: Does it clear everything on the replicas?
 def main() -> typing.Any:
     """The main module"""
 
