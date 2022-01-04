@@ -358,7 +358,7 @@ async def start_aiohttp_loop(
     )
 
     logging.debug("Merging domains and endpoints")
-    if not args.converter:
+    if len(endpoints) != 0:
         send_domains = merge_domains_with_endpoints(endpoints, send_domains)
 
     workload_uuid = settings.get("workload_uuid")
@@ -446,6 +446,7 @@ def execute(
     rank: int,
     endpoints: typing.List,
     dns_cache: typing.List,
+    converter: typing.Optional[str]
 ):
     """This is the main module which will handle all execution"""
 
@@ -494,7 +495,7 @@ def execute(
         )
     )
 
-    if args.converter:
+    if converter:
         for record_chunk in html_lookup.get_all(workload_uuid):
             for record in record_chunk:
                 logging.debug("Running the converter on %s", record.endpoint)
@@ -609,6 +610,7 @@ def run() -> None:
                     domains_loaded,
                     NAMESERVERS,
                     DNS_CACHE,
+                    args.converter
                 )
             )
 
@@ -629,6 +631,7 @@ def run() -> None:
             rank=0,
             endpoints=endpoints,
             dns_cache=DNS_CACHE,
+            converter=args.converter
         )
 
     # Combine all of the replica results and save it to the ClusterRole.SOURCE database

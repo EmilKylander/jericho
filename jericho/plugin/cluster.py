@@ -77,6 +77,7 @@ class Cluster:
                 messagedata.get("rank"),
                 messagedata.get("endpoints"),
                 messagedata.get("dns_cache"),
+                messagedata.get("converter")
             )
 
     async def start_jericho_on_replica(
@@ -86,6 +87,7 @@ class Cluster:
         rank: int,
         server: str,
         dns_cache: typing.List,
+        converter: typing.Optional[str]
     ):
         logging.debug("Sending message to Jericho on server %s", server)
 
@@ -99,6 +101,7 @@ class Cluster:
                 "nameservers": internal_data.get("nameservers"),
                 "rank": rank,
                 "dns_cache": dns_cache,
+                "converter": converter
             }
         )
 
@@ -106,7 +109,6 @@ class Cluster:
         socket = context.socket(zmq.REQ)
         socket.connect(f"tcp://{server}:1338")
         socket.send_string(f"{self.topic} {job}")
-        print(socket.recv())
         socket.close()
 
     async def scatter(
@@ -117,6 +119,7 @@ class Cluster:
         domains_loaded: typing.List[str],
         nameservers: typing.List[str],
         dns_cache: typing.List,
+        converter: typing.Optional[str]
     ):
         splitted_list = split_array_by(domains_loaded, len(self.servers))
         logging.info(
@@ -132,6 +135,7 @@ class Cluster:
                 "endpoints": endpoints,
                 "configuration": configuration,
                 "nameservers": nameservers,
+                "converter": converter
             }
 
             asyncio.ensure_future(
