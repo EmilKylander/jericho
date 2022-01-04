@@ -499,7 +499,7 @@ def execute(
         for record_chunk in html_lookup.get_all(workload_uuid):
             for record in record_chunk:
                 logging.debug("Running the converter on %s", record.endpoint)
-                result = CONVERTERS.get(args.converter).run(
+                result = CONVERTERS.get(converter).run(
                     "", record.endpoint, 200, json.loads(record.headers), record.content
                 )
                 logging.info("Parsed %s - Title: %s", record.endpoint, result["title"])
