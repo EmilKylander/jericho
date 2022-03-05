@@ -26,10 +26,19 @@ jobs:
       - checkout
       - run: cd tests/integration/test-standalone && docker-compose up --build --abort-on-container-exit
   cluster-test:
-    machine:
+    docker:
       - image: ubuntu
     steps:
       - checkout
+      - run:
+          name: Install Docker Compose
+          environment:
+            COMPOSE_VERSION: '1.29.2'
+          command: |
+            curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o ~/docker-compose
+            chmod +x ~/docker-compose
+            sudo mv ~/docker-compose /usr/local/bin/docker-compose
+
       - run: cd tests/integration/test-cluster && docker-compose up --build --abort-on-container-exit
 
 workflows:
