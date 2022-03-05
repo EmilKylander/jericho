@@ -30,7 +30,7 @@ jobs:
       - image: ubuntu
     steps:
       - checkout
-      - run: cd tests/integration/test-cluster && docker-compose up --build --abort-on-container-exit
+      - run: apt install docker-compose -y && cd tests/integration/test-cluster && docker-compose up --build --abort-on-container-exit
 
 workflows:
   sample:
