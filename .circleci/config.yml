@@ -27,7 +27,7 @@ jobs:
       - run: cd tests/integration/test-standalone && docker-compose up --build --abort-on-container-exit
   cluster-test:
     docker:
-      - image: ubuntu-2004:202201-02
+      - image: ubuntu
     steps:
       - checkout
       - run: cd tests/integration/test-cluster && docker-compose up --build --abort-on-container-exit
