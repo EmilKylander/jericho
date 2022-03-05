@@ -517,15 +517,23 @@ def execute(
                     )
                     data_bucket.empty()
 
-        logging.debug("Sent all notifications")
+        if not data_bucket.is_empty():
+            # Send the notifications for the converter
+            logging.debug("Sending notifications")
+            asyncio.run(
+                converter_notifications.run_all(json.dumps(data_bucket.get()))
+            )
+            data_bucket.empty()
+
+        logging.info("Sent all notifications")
         return []
 
     for record_chunk in html_lookup.get_all(workload_uuid):
         for record in record_chunk:
-            if not result_relevant.check(record.endpoint, record.content, endpoints):
+            if not result_relevant.check(record.endpoint, record.content, endpoints) and not converter:
                 continue
 
-            if notifications:
+            if notifications and not converter:
                 logging.debug("Sending the notifications..")
                 asyncio.run(notifications.run_all(record.url))
 
