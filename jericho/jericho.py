@@ -303,7 +303,7 @@ root.addHandler(handler)
 
 NAMESERVERS = []
 DNS_CACHE = {}
-MAX_REQUESTS = 10000
+MAX_REQUESTS = 100
 
 if args.max_requests:
     MAX_REQUESTS = args.max_requests
@@ -375,7 +375,7 @@ async def start_aiohttp_loop(
             continue
         while True:
             try:
-                logging.info("Saving output for %s", url)
+                logging.debug("Saving output for %s", url)
 
                 logging.debug(
                     "Accessing database sqlite:///%s/jericho/jericho.db", HOME

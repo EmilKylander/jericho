@@ -9,10 +9,12 @@ from aiohttp import ClientSession
 import aiohttp.client_exceptions
 from aiohttp.client_reqrep import ClientResponse
 from urllib.parse import urlparse
-from jericho.helpers import add_missing_schemes_to_domain
+
+from flask import redirect
+
+from jericho.helpers import add_missing_schemes_to_domain, split_array_by
 from jericho.plugin.cluster import Cluster
 from jericho.enums.cluster_response_type import ClusterResponseType
-
 
 class EmptyDNSResolve(Exception):
     pass
@@ -32,13 +34,11 @@ class AsyncHTTP:
         self.max_content_length: int = 1000000  # 1Mb
         self.max_retries: int = 1
         self.responses: dict = {}
-        self.spots: int = 0
         self.requests: int = 0
         self.lock: asyncio.Lock = asyncio.Lock()
         self.nameservers: list = [
             nameserver for nameserver in nameservers if nameserver != ""
         ]
-        self.nameserver_index: int = 0
         self.dns_cache: dict = dns_cache
         self.max_requests: int = max_requests
         self.user_agent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
@@ -71,21 +71,42 @@ class AsyncHTTP:
 
         return settings
 
-    async def _get_not_found_html(self, session: ClientSession, url: str, domain: str):
+    async def _get_not_found_html(self, session: ClientSession, url: str, domain: str, redirected: bool = False):
         not_found_html_bytes = b""
         async with self.lock:
             self.http_requests = self.http_requests + 1
-        async with session.get(
-            url,
-            ssl=False,
-            allow_redirects=True,
-            timeout=10,
-            headers={
+
+        if not redirected:
+            headers = {
                 "User-Agent": self.user_agent,
                 "Host": domain,
                 "Connection": "close",
-            },
+            }
+        else:
+            headers = {
+                "User-Agent": self.user_agent,
+                "Connection": "close",
+            }
+
+        async with session.get(
+            url,
+            ssl=False,
+            allow_redirects=False,
+            timeout=10,
+            headers=headers,
         ) as not_found_response:
+            if str(not_found_response.status)[0] == "3":
+                redirect_url = not_found_response.headers.get("Location")
+                if redirect_url is None:
+                    logging.error("A status %s gave no location header on domain %s", not_found_response.status, url)
+                    return ""
+
+                # Sometimes the Location is a relative path
+                if redirect_url[0] == "/":
+                    redirect_url = url + redirect_url
+
+                return (await self._get_not_found_html(session, redirect_url, domain, True))
+
             not_found_html_bytes = await not_found_response.read()
 
         return not_found_html_bytes.decode("utf-8", "ignore")
@@ -164,7 +185,7 @@ class AsyncHTTP:
             errno = 0
             try:
                 nameserver = await self._get_nameserver()
-                logging.info(
+                logging.debug(
                     "Sending a DNS request to domain %s with nameserver %s. Attempt: %s",
                     domain,
                     nameserver,
@@ -225,22 +246,44 @@ class AsyncHTTP:
         session: ClientSession,
         original_url: str,
         domain: str,
+        redirected: bool = False
     ) -> typing.Optional[tuple]:
         """Calls different http methods based on which method was passed to async_http"""
-        async with self.lock:
-            self.http_requests = self.http_requests + 1
+
+        if not redirected:
+            async with self.lock:
+                self.http_requests = self.http_requests + 1
+
+            headers = {
+                "Host": domain,
+                "User-Agent": self.user_agent
+            }
+        else:
+            headers = {
+                "User-Agent": self.user_agent
+            }
 
         async with session.get(
             url,
             ssl=False,
-            allow_redirects=True,
+            allow_redirects=False,
             timeout=10,
-            headers={
-                "Host": domain,
-                "User-Agent": self.user_agent,
-                "Connection": "close",
-            },
+            headers=headers,
         ) as response:
+            if str(response.status)[0] == "3":
+                redirect_url = response.headers.get("Location")
+                logging.debug("Sending a request to redirect url %s", redirect_url)
+
+                if redirect_url is None:
+                    logging.error("A status %s gave no location header on domain %s", response.status, url)
+                    return ()
+
+                # Sometimes the Location is a relative path
+                if redirect_url[0] == "/":
+                    redirect_url = url + redirect_url
+
+                return (await self._fetch(redirect_url, settings, session, original_url, domain, True))
+
             response_content = await self._process_response(
                 url, settings, response, session, domain, original_url
             )
@@ -283,13 +326,10 @@ class AsyncHTTP:
     async def _bound_fetch(self, url: str, settings: dict, session: ClientSession):
         """Sends the HTTP request, handle some different types of exceptions"""
 
-        async with self.lock:
-            self.spots = self.spots + 1
-
-        logging.info("In bound fetch on %s", url)
+        logging.debug("In bound fetch on %s", url)
 
         try:
-            logging.info(
+            logging.debug(
                 "Transforming url to use IP and domain in Host header for url %s", url
             )
             transformed_url, domain = await self._transform_domain_url_to_ip_url(url)
@@ -297,14 +337,14 @@ class AsyncHTTP:
             if not transformed_url:
                 return None
 
-            logging.info(
+            logging.debug(
                 "Sending a request to %s with host header %s", transformed_url, domain
             )
 
             if transformed_url:
                 await self._fetch(transformed_url, settings, session, url, domain)
-                logging.info("Got a response from %s", url)
-            logging.info("Done with fetch on %s", url)
+                logging.debug("Got a response from %s", url)
+            logging.debug("Done with fetch on %s", url)
         except aiohttp.ClientConnectorError as err:
             logging.info("Got a client timeout from url %s, error: %s", url, err)
 
@@ -344,11 +384,6 @@ class AsyncHTTP:
         except Exception as err:
             logging.exception("Got error %s when connecting to %s", err, url)
 
-        finally:
-            async with self.lock:
-                self.spots = self.spots - 1
-                self.finished_requests = self.finished_requests + 1
-
     async def _handle_responses(self) -> typing.AsyncGenerator[None, tuple]:
         """Use the asyncio lock to get the response list"""
         async with self.lock:
@@ -364,12 +399,11 @@ class AsyncHTTP:
                 logging.critical("The nameserver list is empty")
                 return ""
 
-            if len(self.nameservers) >= self.nameserver_index:
-                self.nameserver_index = 0
-                return self.nameservers[self.nameserver_index]
+            nameserver = self.nameservers[random.randint(0, len(self.nameservers)-1)]
 
-            self.nameserver_index = self.nameserver_index + 1
-            return self.nameservers[self.nameserver_index]
+            logging.debug("Called to get a nameserver: %s", nameserver)
+
+            return nameserver
 
     async def _start_statistics(self):
         logging.debug("Statistics coroutine started")
@@ -377,7 +411,6 @@ class AsyncHTTP:
         while True:
             async with self.lock:
                 http_requests = self.http_requests
-                spots = self.spots
                 finished_requests = self.finished_requests
                 dns_requests = self.dns_requests
                 dns_responses = self.dns_responses
@@ -392,17 +425,15 @@ class AsyncHTTP:
                             "rps": int(http_requests / 60),
                             "domain_list_size": self.domain_list_size,
                             "rank": self.rank,
-                            "active_requests": spots,
                             "finished_requests": finished_requests,
                         }
                     )
                 )
             else:
                 logging.info(
-                    "Statistics: Request per second: %s - Domain list size: %s - Active Requests: %s - HTTP Requests: %s - DNS Requests: %s - DNS Responses: %s - DNS server list: %s - DNS Cache: %s - Timeouts: %s",
+                    "Statistics: Request per second: %s - Domain list size: %s - HTTP Requests: %s - DNS Requests: %s - DNS Responses: %s - DNS server list: %s - DNS Cache: %s - Timeouts: %s",
                     req_per_sec,
                     self.domain_list_size,
-                    self.spots,
                     finished_requests,
                     dns_requests,
                     dns_responses,
@@ -416,6 +447,17 @@ class AsyncHTTP:
 
             await asyncio.sleep(60)
 
+    async def _bound_fetch_loop(self, domains: typing.List[str], settings: dict, session: ClientSession):
+        for link in domains:
+            link = add_missing_schemes_to_domain(link)
+            try:
+                await self._bound_fetch(link, settings, session)
+            except:
+                pass
+            async with self.lock:
+                self.finished_requests = self.finished_requests + 1
+
+
     async def _start_event_loop(
         self, session: ClientSession, links: typing.List[str], settings: dict
     ) -> typing.AsyncGenerator[None, typing.Tuple[str, str, dict, str]]:
@@ -426,30 +468,19 @@ class AsyncHTTP:
 
         self.domain_list_size = len(links)
 
-        while True:
-            await asyncio.sleep(1 / self.max_requests)
+        domain_parts = split_array_by(links, self.max_requests)
+        for domain_part in domain_parts:
+            loop.create_task(self._bound_fetch_loop(domain_part, settings, session))
 
-            # Check our response dictionary if we have any responses
+        while True:
             async for resp in self._handle_responses():
                 yield resp
-
-            # Check if we exceed the max requests per second
-            if self.spots > self.max_requests:
-                continue
-
-            # If the links and the spots is empty then we are finished so we break the execution.
-            # If only the links are empty then we should skip creating another coroutine
-            if len(links) == 0:
-                if self.spots == 0:
+            async with self.lock:
+                if self.finished_requests == self.domain_list_size:
                     break
-
-                continue
-
-            link = links.pop()
-            self.domain_list_size = self.domain_list_size - 1
-
-            link = add_missing_schemes_to_domain(link)
-            loop.create_task(self._bound_fetch(link, settings, session))
+                else:
+                    logging.debug("Finished requests: %s - Total %s", self.finished_requests, self.domain_list_size)
+            await asyncio.sleep(1)
 
     async def get(
         self, links: typing.List[str], settings: dict
@@ -477,7 +508,7 @@ class AsyncHTTP:
             cookie_jar=aiohttp.DummyCookieJar(),
         )
         async for result in self._start_event_loop(session, links, settings):
-            logging.info("Saving domain %s", result[0])
+            logging.debug("Saving domain %s", result[0])
             yield result
 
         await session.close()
