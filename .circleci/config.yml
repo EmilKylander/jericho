@@ -26,7 +26,9 @@ jobs:
       - checkout
       - run: cd tests/integration/test-standalone && docker-compose up --build --abort-on-container-exit
   cluster-test:
-    machine: true
+  machine: true
+    docker:
+      image: ubuntu-2004:202201-02
     circleci_ip_ranges: true
     steps:
       - checkout
