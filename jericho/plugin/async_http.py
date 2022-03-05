@@ -10,8 +10,6 @@ import aiohttp.client_exceptions
 from aiohttp.client_reqrep import ClientResponse
 from urllib.parse import urlparse
 
-from flask import redirect
-
 from jericho.helpers import add_missing_schemes_to_domain, split_array_by
 from jericho.plugin.cluster import Cluster
 from jericho.enums.cluster_response_type import ClusterResponseType
