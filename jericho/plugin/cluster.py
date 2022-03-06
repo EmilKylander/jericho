@@ -71,8 +71,8 @@ class Cluster:
 
             if messagedata == "RESTART":
                 logging.info("Got a reboot message!")
-                os.system("'echo pkill -9 python3 && nohup jericho --listen &' > /tmp/restart.sh && chmod +x /tmp/restart.sh && ./restart.sh")
-
+                os.system("echo 'pkill -9 python3 && nohup jericho --listen &' > /tmp/restart.sh && chmod +x /tmp/restart.sh && bash -c /tmp/restart.sh")
+                return False
             try:
                 messagedata = json.loads(messagedata)
             except:
