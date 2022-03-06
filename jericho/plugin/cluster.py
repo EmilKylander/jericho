@@ -73,9 +73,11 @@ class Cluster:
             if messagedata == "RESTART":
                 if self.status == '':
                     continue
+
                 logging.info("Got a reboot message!")
                 os.system("echo 'pkill -9 python3 && nohup jericho --listen &' > /tmp/restart.sh && chmod +x /tmp/restart.sh && bash -c /tmp/restart.sh")
                 return False
+
             try:
                 messagedata = json.loads(messagedata)
             except:
@@ -96,6 +98,8 @@ class Cluster:
                 messagedata.get("converter")
             )
             self.status = ''
+
+            self.job_socket.send_string('OK')
 
     async def _restart_server(self, server):
         logging.info("Sending a restart message to %s", server)
