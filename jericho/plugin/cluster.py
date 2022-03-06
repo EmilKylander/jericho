@@ -66,14 +66,19 @@ class Cluster:
         logging.debug("Listening for jobs")
         while True:
             messagedata = (
-                self.job_socket.recv().decode("utf-8", "ignore").replace(self.topic, "")
+                self.job_socket.recv().decode("utf-8", "ignore").replace(self.topic, "").strip()
             )
 
             if messagedata == "RESTART":
                 logging.info("Got a reboot message!")
                 os.execl(sys.executable, 'python3', __file__, *sys.argv[1:])
 
-            messagedata = json.loads(messagedata)
+            try:
+                messagedata = json.loads(messagedata)
+            except:
+                logging.error("Could not parse message %s", messagedata)
+                continue
+
             logging.info("Got job %s")
             self.job_socket.send_string("ok")
             callback(
