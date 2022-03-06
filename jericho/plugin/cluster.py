@@ -70,7 +70,9 @@ class Cluster:
                 self.job_socket.recv().decode("utf-8", "ignore").replace(self.topic, "").strip()
             )
 
-            if messagedata == "RESTART" and self.status != "":
+            if messagedata == "RESTART":
+                if self.status == '':
+                    continue
                 logging.info("Got a reboot message!")
                 os.system("echo 'pkill -9 python3 && nohup jericho --listen &' > /tmp/restart.sh && chmod +x /tmp/restart.sh && bash -c /tmp/restart.sh")
                 return False
