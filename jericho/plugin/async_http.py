@@ -416,7 +416,7 @@ class AsyncHTTP:
 
             req_per_sec = int(http_requests / 60)
             if self.rank > 0:
-                self.cluster.send_job_message(
+                self.cluster.send_zmq_message(
                     json.dumps(
                         {
                             "type": ClusterResponseType.STATISTICS.value,
