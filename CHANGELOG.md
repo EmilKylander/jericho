@@ -1,3 +1,10 @@
+# 2021-03-06 - 0.3.2
+
+1. Extended data bucket class to save result to a zip file
+2. Bug fixes
+3. Added more tests for converter
+4. Made replicas send back converter results through zeromq
+
 # 2021-12-19 - 0.3.0
 
 1. Added automatic Linode creations

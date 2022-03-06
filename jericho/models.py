@@ -65,3 +65,11 @@ class JerichoDnsServers(Base):
     server = Column(String(255))
     time_created = Column(DateTime(timezone=True), server_default=func.now())
     id = Column(Integer, autoincrement=True, primary_key=True)
+
+class JerichoConverter(Base):
+    __tablename__ = "jericho_converter"
+
+    workload_uuid = Column(String(36))
+    location = Column(String(255))
+    time_created = Column(DateTime(timezone=True), server_default=func.now())
+    id = Column(Integer, autoincrement=True, primary_key=True)

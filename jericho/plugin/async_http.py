@@ -25,7 +25,7 @@ class AsyncHTTP:
         dns_cache: dict,
         max_requests: int,
         cluster: Cluster,
-        rank,
+        rank: int,
     ):
         """Initialize default values"""
         self.multimedia_content_types: list = ["audio", "image", "video", "font"]

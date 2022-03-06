@@ -127,7 +127,7 @@ class Cluster:
             len(self.servers),
             len(splitted_list),
         )
-        rank = 0
+        rank = 1 # A replica always start with the rank 1 because rank 0 is main
         index = 0
         for split_list in splitted_list:
             internal_data = {

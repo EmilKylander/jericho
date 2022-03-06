@@ -9,6 +9,7 @@ from aiohttp import ClientSession
 from jericho.models import JerichoEndpoints
 from jericho.repositories.endpoints_lookup import EndpointsLookup
 from jericho.repositories.result_lookup import ResultLookup
+from jericho.repositories.converter_lookup import ConverterLookup
 from jericho.version import version
 
 
@@ -75,6 +76,10 @@ def get_endpoints(endpoints_lookup: EndpointsLookup) -> typing.Any:
     for endpoint in endpoints_lookup.get():
         print(f"{endpoint['endpoint']}\t{endpoint['pattern']}")
 
+def get_converter_output(converter_lookup: ConverterLookup) -> typing.Any:
+    """This prints out all of the converter results we have in our database"""
+    for endpoint in converter_lookup.get():
+        print(f"{endpoint['workload_uuid']}\t{endpoint['location']}")
 
 async def pull_dns_servers(servers: list) -> typing.Optional[list]:
     async with ClientSession(
@@ -98,7 +103,6 @@ async def pull_dns_servers(servers: list) -> typing.Optional[list]:
             )
 
         days = (datetime.now() - last_updated).days
-        print(days)
         if days == 0 and not len(servers) == 0:
             return None
 

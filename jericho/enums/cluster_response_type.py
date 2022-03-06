@@ -6,3 +6,4 @@ class ClusterResponseType(Enum):
     STATISTICS = "STATISTICS"
     RESULT = "RESULT"
     JOB = "JOB"
+    WEBPAGE_CONTENT = "WEBPAGE_CONTENT"

@@ -1,0 +1,22 @@
+version: "3"
+
+services:
+  apache:
+    container_name: apache
+    build:
+      context: ../../../
+      dockerfile: tests/integration/test-cluster/apache/Dockerfile
+  jericho:
+    build:
+      context: ../../../
+      dockerfile: tests/integration/test-cluster/Dockerfile
+    depends_on:
+     - apache
+     - jericho-replica
+  jericho-replica:
+    container_name: jericho_replica
+    build:
+      context: ../../../
+      dockerfile: tests/integration/test-cluster/replica/Dockerfile
+    depends_on:
+     - apache

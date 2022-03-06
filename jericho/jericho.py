@@ -34,6 +34,7 @@ import asyncio
 import json
 import aiosqlite
 import uvloop
+import base64
 from threading import Thread
 from sqlalchemy.orm import sessionmaker
 from jericho.plugin.async_http import AsyncHTTP
@@ -51,6 +52,7 @@ from jericho.repositories.result_lookup import ResultLookup
 from jericho.repositories.endpoints_lookup import EndpointsLookup
 from jericho.repositories.html_lookup import HtmlLookup
 from jericho.repositories.dns_server_lookup import DnsServerLookup
+from jericho.repositories.converter_lookup import ConverterLookup
 
 from jericho.converters.identifier import Identifier
 
@@ -69,6 +71,7 @@ from jericho.cli import (
     get_endpoints,
     upgrade,
     pull_dns_servers,
+    get_converter_output
 )
 
 from jericho.helpers import (
@@ -226,6 +229,12 @@ parser.add_argument(
     help="Start a Jericho replica that will listen for jobs",
 )
 
+parser.add_argument(
+    "--get-converter-output",
+    action="store_true",
+    help="Get the locations of the compressed result from converter jobs",
+)
+
 HOME = str(Path.home())
 
 if not path.exists(f"{HOME}/jericho"):
@@ -334,7 +343,7 @@ dns_server_lookup = DnsServerLookup(session)
 
 output_verifier = OutputVerifier()
 diff = Diff()
-data_bucket = DataBucket(max_size=100000)  # 100kB
+data_bucket = DataBucket(max_size="ALL")
 
 CONVERTERS = {"identifier": Identifier()}
 if args.input:
@@ -416,6 +425,7 @@ def receiver(cluster: Cluster):
     session = Session()
 
     result_lookup = ResultLookup(session)
+    converter_lookup = ConverterLookup(session)
 
     logging.info("Waiting for result messages..")
     for response in cluster.receive_zmq_message():
@@ -429,14 +439,22 @@ def receiver(cluster: Cluster):
 
         if response.get("type") == ClusterResponseType.STATISTICS.value:
             logging.info(
-                "Statistics (Rank %s) | Requests per second: %s - Domain size: %s - Active requests: %s - Finished Requests: %s",
+                "Statistics (Rank %s) | Finished Requests: %s",
                 response.get("rank"),
-                response.get("rps"),
-                response.get("domain_list_size"),
-                response.get("active_requests"),
                 response.get("finished_requests"),
             )
 
+        if response.get("type") == ClusterResponseType.WEBPAGE_CONTENT.value:
+            logging.info(
+                "Node %s sent back compressed data",
+                response.get("rank"),
+            )
+            content = base64.b64decode(response.get("zip"))
+            zip_output_file = open(f"/tmp/{response.get('uuid')}.zip", "w", encoding="utf-8")
+            zip_output_file.write(content.decode('UTF-8','ignore'))
+            zip_output_file.close()
+
+            converter_lookup.save(response.get("workload_uuid"), f"/tmp/{response.get('uuid')}.zip")
 
 def execute(
     domains: typing.List[str],
@@ -502,38 +520,56 @@ def execute(
                 result = CONVERTERS.get(converter).run(
                     "", record.endpoint, 200, json.loads(record.headers), record.content
                 )
+
                 logging.info("Parsed %s - Title: %s", record.endpoint, result["title"])
 
-                if not converter_configuration:
-                    continue
-
-                data_bucket.save(result)
+                data_bucket.save((record.endpoint, json.dumps({"content": record.content, "result": result})))
 
                 if data_bucket.is_full():
-                    # Send the notifications for the converter
-                    logging.debug("Sending notifications")
-                    asyncio.run(
-                        converter_notifications.run_all(json.dumps(data_bucket.get()))
+                    with open(data_bucket.get(), "rb") as f:
+                        encoded_string = base64.b64encode(f.read()).decode()
+
+                    cluster.send_zmq_message(
+                        json.dumps(
+                            {
+                                "rank": rank, 
+                                "type": ClusterResponseType.WEBPAGE_CONTENT.value,
+                                "workload_uuid": workload_uuid,
+                                "uuid": data_bucket.get_uuid(),
+                                "zip": encoded_string,
+                            }
+                        )
                     )
                     data_bucket.empty()
 
         if not data_bucket.is_empty():
-            # Send the notifications for the converter
-            logging.debug("Sending notifications")
-            asyncio.run(
-                converter_notifications.run_all(json.dumps(data_bucket.get()))
+            with open(data_bucket.get(), "rb") as f:
+                encoded_string = base64.b64encode(f.read()).decode()
+
+            cluster.send_zmq_message(
+                json.dumps(
+                    {
+                        "rank": rank,
+                        "type": ClusterResponseType.WEBPAGE_CONTENT.value,
+                        "workload_uuid": workload_uuid,
+                        "uuid": data_bucket.get_uuid(),
+                        "zip": encoded_string,
+                    }
+                )
             )
             data_bucket.empty()
+    
+        if cluster_role == ClusterRole.REPLICA:
+            cluster.send_zmq_message(ClusterResponseType.FINISHED.value)
 
-        logging.info("Sent all notifications")
         return []
 
     for record_chunk in html_lookup.get_all(workload_uuid):
         for record in record_chunk:
-            if not result_relevant.check(record.endpoint, record.content, endpoints) and not converter:
+            if not result_relevant.check(record.endpoint, record.content, endpoints):
                 continue
 
-            if notifications and not converter:
+            if notifications:
                 logging.debug("Sending the notifications..")
                 asyncio.run(notifications.run_all(record.url))
 
@@ -669,6 +705,10 @@ def main() -> typing.Any:
 
     if args.get_endpoints:
         get_endpoints(endpoints_lookup)
+
+    if args.get_converter_output:
+        get_converter_output(ConverterLookup(session)
+)
 
     if args.upgrade:
         upgrade()

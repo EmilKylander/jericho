@@ -30,6 +30,11 @@ jobs:
     steps:
       - checkout
       - run: cd tests/integration/test-cluster && docker-compose up --build --abort-on-container-exit
+  converter-test:
+    machine: true
+    steps:
+      - checkout
+      - run: cd tests/integration/test-converter && docker-compose up --build --abort-on-container-exit
 
 workflows:
   sample:
@@ -37,3 +42,4 @@ workflows:
       - pytest
       - standalone-test
       - cluster-test
+      - converter-test
