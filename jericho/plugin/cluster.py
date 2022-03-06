@@ -70,7 +70,8 @@ class Cluster:
             )
 
             if messagedata == "RESTART":
-                os.execv(sys.executable, ['python3'] + sys.argv)
+                logging.info("Got a reboot message!")
+                os.execl(sys.executable, 'python3', __file__, *sys.argv[1:])
 
             messagedata = json.loads(messagedata)
             logging.info("Got job %s")
@@ -87,9 +88,10 @@ class Cluster:
             )
 
     async def _restart_server(self, server):
+        logging.info("Sending a restart message to %s", server)
         context = zmq.Context()
         socket = context.socket(zmq.REQ)
-        socket.connect(f"tcp://{server}:1339")
+        socket.connect(f"tcp://{server}:1338")
         socket.send_string(f"{self.topic} RESTART")
         socket.close()
 
