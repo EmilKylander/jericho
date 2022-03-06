@@ -18,6 +18,7 @@ class Cluster:
         self.job_socket = None
         self.topic = "jericho_event"
         self.finished = 0
+        self.status = ""
 
     def start_zmq_server(self):
         logging.debug("Starting result server")
@@ -69,7 +70,7 @@ class Cluster:
                 self.job_socket.recv().decode("utf-8", "ignore").replace(self.topic, "").strip()
             )
 
-            if messagedata == "RESTART":
+            if messagedata == "RESTART" and self.status != "":
                 logging.info("Got a reboot message!")
                 os.system("echo 'pkill -9 python3 && nohup jericho --listen &' > /tmp/restart.sh && chmod +x /tmp/restart.sh && bash -c /tmp/restart.sh")
                 return False
@@ -81,6 +82,7 @@ class Cluster:
 
             logging.info("Got job %s")
             self.job_socket.send_string("ok")
+            self.status = f"Working on {messagedata.get('workload_uuid')}"
             callback(
                 messagedata.get("domains"),
                 messagedata.get("workload_uuid"),
@@ -91,6 +93,7 @@ class Cluster:
                 messagedata.get("dns_cache"),
                 messagedata.get("converter")
             )
+            self.status = ''
 
     async def _restart_server(self, server):
         logging.info("Sending a restart message to %s", server)
