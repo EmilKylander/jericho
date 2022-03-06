@@ -41,7 +41,7 @@ class Linode:
                 LINODE_INSTANCES_API,
                 ssl=False,
                 allow_redirects=True,
-                timeout=10,
+                timeout=300,
                 headers={
                     "Authorization": f"Bearer {self.configuration['token']}",
                     "Content-Type": CONTENT_TYPE_APPLICATION_JSON,
@@ -78,7 +78,7 @@ class Linode:
                 LINODE_INSTANCES_API,
                 ssl=False,
                 allow_redirects=True,
-                timeout=10,
+                timeout=300,
                 headers={
                     "Authorization": f"Bearer {self.configuration['token']}",
                     "Content-Type": CONTENT_TYPE_APPLICATION_JSON,
@@ -110,7 +110,7 @@ class Linode:
                 LINODE_INSTANCES_API,
                 ssl=False,
                 allow_redirects=True,
-                timeout=10,
+                timeout=300,
                 headers={
                     "Authorization": f"Bearer {self.configuration['token']}",
                     "Content-Type": CONTENT_TYPE_APPLICATION_JSON,
@@ -140,7 +140,7 @@ class Linode:
                 LINODE_INSTANCES_API,
                 ssl=False,
                 allow_redirects=True,
-                timeout=10,
+                timeout=300,
                 headers={
                     "Authorization": f"Bearer {self.configuration['token']}",
                     "Content-Type": CONTENT_TYPE_APPLICATION_JSON,
@@ -161,7 +161,7 @@ class Linode:
                             f"https://api.linode.com/v4/linode/instances/{instance_id}",
                             ssl=False,
                             allow_redirects=True,
-                            timeout=10,
+                            timeout=300,
                             headers={
                                 "Authorization": f"Bearer {self.configuration['token']}",
                                 "Content-Type": CONTENT_TYPE_APPLICATION_JSON,

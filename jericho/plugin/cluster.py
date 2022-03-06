@@ -2,6 +2,8 @@
 import typing
 import logging
 import asyncio
+import os
+import sys
 import json
 import uuid
 import zmq
@@ -66,8 +68,12 @@ class Cluster:
             messagedata = (
                 self.job_socket.recv().decode("utf-8", "ignore").replace(self.topic, "")
             )
+
+            if messagedata == "RESTART":
+                os.execv(sys.executable, ['python3'] + sys.argv)
+
             messagedata = json.loads(messagedata)
-            logging.info("Got job %s", messagedata)
+            logging.info("Got job %s")
             self.job_socket.send_string("ok")
             callback(
                 messagedata.get("domains"),
@@ -80,6 +86,13 @@ class Cluster:
                 messagedata.get("converter")
             )
 
+    async def _restart_server(self, server):
+        context = zmq.Context()
+        socket = context.socket(zmq.REQ)
+        socket.connect(f"tcp://{server}:1339")
+        socket.send_string(f"{self.topic} RESTART")
+        socket.close()
+
     async def start_jericho_on_replica(
         self,
         workload_uuid: str,
@@ -89,6 +102,8 @@ class Cluster:
         dns_cache: typing.List,
         converter: typing.Optional[str]
     ):
+        await self._restart_server(server)
+
         logging.debug("Sending message to Jericho on server %s", server)
 
         job = json.dumps(
