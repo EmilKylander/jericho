@@ -71,8 +71,7 @@ class Cluster:
 
             if messagedata == "RESTART":
                 logging.info("Got a reboot message!")
-                os.execl(sys.executable, sys.executable, *sys.argv)
-
+                os.system("'echo pkill -9 python3 && nohup jericho --listen &' > /tmp/restart.sh && chmod +x /tmp/restart.sh && ./restart.sh")
 
             try:
                 messagedata = json.loads(messagedata)
