@@ -29,7 +29,7 @@ class Cluster:
     def start_zmq_subscribe_server(self):
         logging.debug("Starting subscribe server")
         context = zmq.Context()
-        self.job_socket = context.socket(zmq.REP)
+        self.job_socket = context.socket(zmq.PULL)
         self.job_socket.bind("tcp://*:1338")
 
     def send_zmq_message(self, message):
@@ -85,7 +85,6 @@ class Cluster:
                 continue
 
             logging.info("Got job %s")
-            self.job_socket.send_string("ok")
             self.status = f"Working on {messagedata.get('workload_uuid')}"
             callback(
                 messagedata.get("domains"),
@@ -99,12 +98,10 @@ class Cluster:
             )
             self.status = ''
 
-            self.job_socket.send_string('OK')
-
     async def _restart_server(self, server):
         logging.info("Sending a restart message to %s", server)
         context = zmq.Context()
-        socket = context.socket(zmq.REQ)
+        socket = context.socket(zmq.PUSH)
         socket.connect(f"tcp://{server}:1338")
         socket.send_string(f"{self.topic} RESTART")
         socket.close()
@@ -137,7 +134,7 @@ class Cluster:
         )
 
         context = zmq.Context()
-        socket = context.socket(zmq.REQ)
+        socket = context.socket(zmq.PUSH)
         socket.connect(f"tcp://{server}:1338")
         socket.send_string(f"{self.topic} {job}")
         socket.close()
