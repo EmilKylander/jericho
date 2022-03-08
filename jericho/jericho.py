@@ -134,6 +134,12 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--upgrade-all",
+    action="store_true",
+    help="Upgrades jericho to the latest version on this computer and on all servers",
+)
+
+parser.add_argument(
     "--log-level",
     type=str,
     help="Set the Jericho log level. This overwrides the log level specified in configuration. Available modes: debug, info, warn, error, fatal, critical. Default: info",
@@ -707,11 +713,14 @@ def main() -> typing.Any:
         get_endpoints(endpoints_lookup)
 
     if args.get_converter_output:
-        get_converter_output(ConverterLookup(session)
-)
+        get_converter_output(ConverterLookup(session))
 
     if args.upgrade:
         upgrade()
+
+    if args.upgrade_all:
+        upgrade()
+        cluster.upgrade_servers()
 
     if args.version:
         get_version()

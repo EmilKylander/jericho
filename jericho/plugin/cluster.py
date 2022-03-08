@@ -78,6 +78,12 @@ class Cluster:
                 os.system("echo 'pkill -9 python3 && nohup jericho --listen &' > /tmp/restart.sh && chmod +x /tmp/restart.sh && bash -c /tmp/restart.sh")
                 return False
 
+            if messagedata == "UPGRADE":
+                logging.info("Got a upgrade message!")
+                os.system("jericho --upgrade")
+                os.system("echo 'pkill -9 python3 && nohup jericho --listen &' > /tmp/restart.sh && chmod +x /tmp/restart.sh && bash -c /tmp/restart.sh")
+                return False
+
             try:
                 messagedata = json.loads(messagedata)
             except:
@@ -173,3 +179,20 @@ class Cluster:
             )
             rank = rank + 1
             index = index + 1
+
+    async def _send_upgrade_message(self, server):
+        logging.info("Sending a upgrade message to %s", server)
+        context = zmq.Context()
+        socket = context.socket(zmq.PUSH)
+        socket.connect(f"tcp://{server}:1338")
+        socket.send_string(f"{self.topic} UPGRADE")
+        socket.close()
+
+    async def upgrade_servers(
+        self
+    ):
+        """Send a upgrade message to all servers"""
+        for server in self.servers:
+            asyncio.ensure_future(
+                self._send_upgrade_message(server)
+            )
