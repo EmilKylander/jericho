@@ -207,7 +207,7 @@ parser.add_argument(
 
 parser.add_argument(
     "--remove-servers",
-    type=str,
+    action="store_true",
     help="Remove all servers to the server list",
 )
 
@@ -720,7 +720,7 @@ def main() -> typing.Any:
 
     if args.upgrade_all:
         upgrade()
-        cluster.upgrade_servers()
+        cluster.upgrade_servers(server_lookup.get())
 
     if args.version:
         get_version()
@@ -740,6 +740,10 @@ def main() -> typing.Any:
 
     if args.remove_server:
         server_lookup.delete(args.remove_server)
+
+    if args.remove_servers:
+        for server in server_lookup.get():
+            server_lookup.delete(server)
 
     if args.get_servers:
         for server in server_lookup.get():

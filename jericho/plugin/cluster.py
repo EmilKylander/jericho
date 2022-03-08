@@ -180,7 +180,7 @@ class Cluster:
             rank = rank + 1
             index = index + 1
 
-    async def _send_upgrade_message(self, server):
+    def _send_upgrade_message(self, server):
         logging.info("Sending a upgrade message to %s", server)
         context = zmq.Context()
         socket = context.socket(zmq.PUSH)
@@ -188,11 +188,11 @@ class Cluster:
         socket.send_string(f"{self.topic} UPGRADE")
         socket.close()
 
-    async def upgrade_servers(
-        self
+    def upgrade_servers(
+        self,
+        servers
     ):
         """Send a upgrade message to all servers"""
-        for server in self.servers:
-            asyncio.ensure_future(
-                self._send_upgrade_message(server)
-            )
+        for server in servers:
+            self._send_upgrade_message(server)
+            
