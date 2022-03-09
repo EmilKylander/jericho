@@ -7,6 +7,8 @@ import sys
 import json
 import uuid
 import zmq
+import threading
+import queue
 from jericho.helpers import split_array_by
 from jericho.enums.cluster_response_type import ClusterResponseType
 
@@ -36,17 +38,44 @@ class Cluster:
         logging.info("Sending message %s", message)
         self.socket.send_string(f"{self.topic} {message}")
 
+    def get_message_from_replica(self, server, q):
+        context = zmq.Context()
+        socket = context.socket(zmq.SUB)
+        socket.connect(f"tcp://{server}:1337")
+        socket.setsockopt_string(zmq.SUBSCRIBE, self.topic)
+
+        # We should get statistics statuses every minute, if a recv has not gotten any responses in two minutes then something is wrong
+        socket.RCVTIMEO = 120000
+
+        while True:
+            try:
+                messagedata = (
+                    socket.recv().decode("utf-8", "ignore").replace(self.topic, "")
+                ).strip()
+            except:
+                logging.warning("Got a timeout on server %s, closing the socket and re-connecting..")
+                socket.close()
+                self.get_message_from_replica(server, q)
+
+            logging.debug("Received %s", messagedata)
+            if messagedata == ClusterResponseType.FINISHED.value:
+                logging.info("Got the finish signal")
+                q.put(ClusterResponseType.FINISHED.value)
+                return False
+
+            q.put(messagedata)
+
     def receive_zmq_message(self):
         context = zmq.Context()
         socket = context.socket(zmq.SUB)
+        q = queue.Queue()
+
         for server in self.servers:
-            socket.connect(f"tcp://{server}:1337")
-            socket.setsockopt_string(zmq.SUBSCRIBE, self.topic)
+            threading.Thread(target=self.get_message_from_replica, args=(server, q, )).start()
 
         while True:
-            messagedata = (
-                socket.recv().decode("utf-8", "ignore").replace(self.topic, "")
-            ).strip()
+            messagedata = q.get()
+
             logging.debug("Received %s", messagedata)
             if messagedata == ClusterResponseType.FINISHED.value:
                 logging.info("Got the finish signal")
