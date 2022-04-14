@@ -101,7 +101,7 @@ To use the servers when scanning just run ```jericho --input yourdomainlist.txt 
 
 Adding a server to the cluster is easy. Just run the following command:
 
-```jericho --add-server root@123.123.123.123:1337password --install```
+```jericho --add-server root@123.123.123.123:1337password```
 
 Then you can use it with ```jericho --input yourdomainlist.txt --use-servers```
 
