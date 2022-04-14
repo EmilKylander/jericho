@@ -209,12 +209,6 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--add-server-password",
-    type=str,
-    help="Add a password to a server in case you don't have public keys. Use like --add-server-password 123.123.123.123:1337password",
-)
-
-parser.add_argument(
     "--remove-server",
     type=str,
     help="Remove a server to the server list, use like --remove-server 1.2.3.4",
