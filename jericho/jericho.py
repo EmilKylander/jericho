@@ -46,6 +46,7 @@ from jericho.plugin.result_is_relevant import ResultRelevant
 from jericho.plugin.notifications import Notifications
 from jericho.plugin.data_bucket import DataBucket
 from jericho.plugin.linode import Linode
+from jericho.plugin.custom_server import CustomServer
 from jericho.plugin.cloud import Cloud
 from jericho.plugin.cluster import Cluster
 from jericho.repositories.cache_lookup import CacheLookup
@@ -205,6 +206,12 @@ parser.add_argument(
     "--add-server",
     type=str,
     help="Add a server to the server list, use like --add-server 1.2.3.4",
+)
+
+parser.add_argument(
+    "--add-server-password",
+    type=str,
+    help="Add a password to a server in case you don't have public keys. Use like --add-server-password 123.123.123.123:1337password",
 )
 
 parser.add_argument(
@@ -791,11 +798,30 @@ def main() -> typing.Any:
             print(results[-1])
 
     if args.add_server:
-        if not args.add_server in server_lookup.get():
-            logging.info("Adding server %s to Jericho", args.add_server)
-            server_lookup.save(args.add_server)
+        username = ""
+        password = ""
+        server = args.add_server
+        if "@" in args.add_server:
+            username = args.add_server.split("@")[0]
+            server = args.add_server.split("@")[1]
+            logging.info("Adding username %s to server ", username)
+
+        if ":" in args.add_server:
+            password = server.split(":")[1]
+            server = server.split(":")[0]
+            logging.info("Adding password %s to server", password)
+
+        if not server in server_lookup.get():
+            logging.info("Adding server %s to Jericho", server)
+            server_lookup.save(server)
         else:
             logging.info("Not adding server %s because of duplicate", args.add_server)
+            return False
+
+        if username != "" and password != "":
+            logging.info("Installing Jericho on %s", server)
+            cloud = Cloud(provider=CustomServer(server, username, password))
+            asyncio.run(cloud.setup(1))
 
     if args.remove_server:
         server_lookup.delete(args.remove_server)

@@ -15,34 +15,42 @@ class Cloud:
         """Run the installation synchronously"""
         logging.info("Logging into server %s", instance["resp"]["ipv4"][0])
         while True:
+            username = "root"
+            if instance["resp"]['username']:
+                username = instance["resp"]['username']
+
+            if username == "root":
+                home_directory = "/root"
+            else:
+                home_directory = f"/home/{username}"
             try:
                 async with asyncssh.connect(
                     instance["resp"]["ipv4"][0],
-                    username="root",
+                    username=username,
                     password=instance.get("password"),
                     known_hosts=None,
                 ) as conn:
                     async with conn.start_sftp_client() as sftp:
+                        await conn.run("mkdir /tmp/jericho")
                         await sftp.put(
                             f"/home/{get_username()}/.ssh/jericho_key.pub",
-                            "/root/jericho_key",
+                            "/tmp/jericho/jericho_key",
                         )
                         await conn.run(
-                            "cat /root/jericho_key >> /root/.ssh/authorized_keys"
+                            f"cat /tmp/jericho/jericho_key >> /{home_directory}/.ssh/authorized_keys"
                         )
                         await conn.run("apt update -y")
                         await conn.run("apt install git python3 python3-pip -y")
                         await conn.run(
-                            "git clone https://github.com/EmilKylander/jericho"
+                            "cd /tmp/jericho && git clone https://github.com/EmilKylander/jericho"
                         )
-                        await conn.run("cd jericho")
-                        await conn.run("cd jericho && pip3 install .")
-                        await conn.run("rm -rf jericho")
+                        await conn.run("cd /tmp/jericho/jericho && pip3 install .")
+                        await conn.run("rm -rf /tmp/jericho/jericho")
                         await conn.run(
-                            "echo root             soft    nofile          50000 >> /etc/security/limits.conf"
+                            f"echo {username}             soft    nofile          50000 >> /etc/security/limits.conf"
                         )
                         await conn.run("ulimit -n 50000")
-                        await conn.run("nohup jericho --listen > /root/jericho.log 2>&1 &")
+                        await conn.run(f"nohup jericho --listen > /{username}/jericho.log 2>&1 &")
                         self.instances.append(instance["resp"]["ipv4"][0])
                         return True
             except Exception as err:
