@@ -35,6 +35,7 @@ import json
 import aiosqlite
 import uvloop
 import base64
+import shutil
 from threading import Thread
 from sqlalchemy.orm import sessionmaker
 from jericho.plugin.async_http import AsyncHTTP
@@ -53,6 +54,7 @@ from jericho.repositories.endpoints_lookup import EndpointsLookup
 from jericho.repositories.html_lookup import HtmlLookup
 from jericho.repositories.dns_server_lookup import DnsServerLookup
 from jericho.repositories.converter_lookup import ConverterLookup
+from jericho.repositories.workload_lookup import WorkloadLookup
 
 from jericho.converters.identifier import Identifier
 
@@ -119,6 +121,12 @@ parser.add_argument(
     "--input",
     type=str,
     help="The file with domains",
+)
+
+parser.add_argument(
+    "--continue-workload",
+    type=str,
+    help="Continue on a workload if the client disconnected (This will re-download every job result)",
 )
 
 parser.add_argument(
@@ -223,6 +231,13 @@ parser.add_argument(
     help="Use the servers when scanning",
 )
 
+
+parser.add_argument(
+    "--get-last-workload-uuid",
+    action="store_true",
+    help="Get the latest workload uuid",
+)
+
 parser.add_argument(
     "--include-master",
     action="store_true",
@@ -239,6 +254,12 @@ parser.add_argument(
     "--get-converter-output",
     action="store_true",
     help="Get the locations of the compressed result from converter jobs",
+)
+
+parser.add_argument(
+    "--delete-converter-result",
+    action="store_true",
+    help="Delete all of the result which come from the converter",
 )
 
 HOME = str(Path.home())
@@ -349,7 +370,7 @@ dns_server_lookup = DnsServerLookup(session)
 
 output_verifier = OutputVerifier()
 diff = Diff()
-data_bucket = DataBucket(max_size="ALL")
+data_bucket = DataBucket(max_size=100000000) # 100Mb (Avoid hitting the max ram when zipping)
 
 CONVERTERS = {"identifier": Identifier()}
 if args.input:
@@ -520,6 +541,7 @@ def execute(
     )
 
     if converter:
+        converter_lookup = ConverterLookup(session)
         for record_chunk in html_lookup.get_all(workload_uuid):
             for record in record_chunk:
                 logging.debug("Running the converter on %s", record.endpoint)
@@ -531,8 +553,10 @@ def execute(
 
                 data_bucket.save((record.endpoint, json.dumps({"content": record.content, "result": result})))
 
+                path = data_bucket.get()
+
                 if data_bucket.is_full():
-                    with open(data_bucket.get(), "rb") as f:
+                    with open(path, "rb") as f:
                         encoded_string = base64.b64encode(f.read()).decode()
 
                     cluster.send_zmq_message(
@@ -548,8 +572,17 @@ def execute(
                     )
                     data_bucket.empty()
 
+                    # Save the result files in case of client crash
+                    if rank >= 1:
+                        new_location = f"/tmp/{uuid.uuid4()}"
+                        shutil.copyfile(path, new_location)
+                        converter_lookup.save(workload_uuid, new_location)
+
+        html_lookup.delete_workload(workload_uuid)
+
         if not data_bucket.is_empty():
-            with open(data_bucket.get(), "rb") as f:
+            path = data_bucket.get()
+            with open(path, "rb") as f:
                 encoded_string = base64.b64encode(f.read()).decode()
 
             cluster.send_zmq_message(
@@ -564,7 +597,16 @@ def execute(
                 )
             )
             data_bucket.empty()
-    
+
+            # Save the result files in case of client crash
+            if rank >= 1:
+                new_location = f"/tmp/{uuid.uuid4()}"
+                shutil.copyfile(path, new_location)
+                converter_lookup.save(workload_uuid, new_location)
+
+        html_lookup.delete_workload(workload_uuid)
+
+
         if cluster_role == ClusterRole.REPLICA:
             cluster.send_zmq_message(ClusterResponseType.FINISHED.value)
 
@@ -612,6 +654,8 @@ def run() -> None:
     """This initializes the business logic"""
     global NAMESERVERS
 
+
+    # TODO: This updates every time now..
     if not args.nameservers and not args.resolve_list:
         logging.info("Updating DNS servers if there is a new update")
         original_dns_servers = dns_server_lookup.get_all()
@@ -640,6 +684,10 @@ def run() -> None:
         endpoints_from_database = endpoints_lookup.get()
 
     workload_uuid = str(uuid.uuid4())
+
+    workload_lookup = WorkloadLookup(session)
+    workload_lookup.save(workload_uuid)
+
     logging.info("Using workload uuid %s", workload_uuid)
 
     if args.use_servers:
@@ -729,7 +777,18 @@ def main() -> typing.Any:
         run()
 
     if args.listen:
-        cluster.listen_for_jobs(callback=execute)
+        cluster.listen_for_jobs(callback=execute, converter_lookup=ConverterLookup(session))
+
+    if args.delete_converter_result:
+        converter_lookup = ConverterLookup(session)
+        converter_lookup.delete_workload()
+        print("OK")
+
+    if args.get_last_workload_uuid:
+        workload_lookup = WorkloadLookup(session)
+        results = workload_lookup.get()
+        if len(results) > 0:
+            print(results[-1])
 
     if args.add_server:
         if not args.add_server in server_lookup.get():
@@ -790,3 +849,9 @@ def main() -> typing.Any:
             print(instance)
 
         logging.info("Found %s Jericho instances", len(resp))
+
+    if args.continue_workload:
+        logging.info("Requesting the finished jobs")
+        cluster.request_finished_jobs(args.continue_workload)
+        receiver(cluster)
+        logging.info("Receiver is done, exiting..")

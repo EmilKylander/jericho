@@ -3,14 +3,15 @@ import typing
 import logging
 import asyncio
 import os
-import sys
 import json
 import uuid
 import zmq
 import threading
 import queue
+import base64
 from jericho.helpers import split_array_by
 from jericho.enums.cluster_response_type import ClusterResponseType
+from jericho.repositories.converter_lookup import ConverterLookup
 
 
 class Cluster:
@@ -21,6 +22,7 @@ class Cluster:
         self.topic = "jericho_event"
         self.finished = 0
         self.status = ""
+        self.rank = 1
 
     def start_zmq_server(self):
         logging.debug("Starting result server")
@@ -53,7 +55,7 @@ class Cluster:
                     socket.recv().decode("utf-8", "ignore").replace(self.topic, "")
                 ).strip()
             except:
-                logging.warning("Got a timeout on server %s, closing the socket and re-connecting..")
+                logging.warning("Got a timeout on server %s, closing the socket and re-connecting..", server)
                 socket.close()
                 self.get_message_from_replica(server, q)
 
@@ -66,8 +68,6 @@ class Cluster:
             q.put(messagedata)
 
     def receive_zmq_message(self):
-        context = zmq.Context()
-        socket = context.socket(zmq.SUB)
         q = queue.Queue()
 
         for server in self.servers:
@@ -84,7 +84,6 @@ class Cluster:
                     logging.info(
                         "Finish signals are the same amount of servers, finishing.."
                     )
-                    socket.close()
                     break
                 else:
                     continue
@@ -92,12 +91,13 @@ class Cluster:
             messagedata = json.loads(messagedata)
             yield messagedata
 
-    def listen_for_jobs(self, callback):
+    def listen_for_jobs(self, callback, converter_lookup: ConverterLookup):
         logging.debug("Listening for jobs")
         while True:
             messagedata = (
                 self.job_socket.recv().decode("utf-8", "ignore").replace(self.topic, "").strip()
             )
+            logging.info("Received message %s", messagedata)
 
             if messagedata == "RESTART":
                 if self.status == '':
@@ -113,6 +113,28 @@ class Cluster:
                 os.system("echo 'pkill -9 python3 && nohup jericho --listen &' > /tmp/restart.sh && chmod +x /tmp/restart.sh && bash -c /tmp/restart.sh")
                 return False
 
+
+            if "SEND_FINISHED_JOBS" in messagedata:
+                workload_uuid = messagedata.replace("SEND_FINISHED_JOBS ", "")
+                finished_jobs = converter_lookup.get_workload(workload_uuid)
+
+                for job in finished_jobs:
+                    with open(job.get("location"), "rb") as f:
+                        encoded_string = base64.b64encode(f.read()).decode()
+
+                    self.send_zmq_message(
+                        json.dumps(
+                            {
+                                "rank": self.rank, 
+                                "type": ClusterResponseType.WEBPAGE_CONTENT.value,
+                                "workload_uuid": workload_uuid,
+                                "uuid": job.get("location").replace("/tmp/", ""),
+                                "zip": encoded_string,
+                            }
+                        )
+                    )
+                continue
+
             try:
                 messagedata = json.loads(messagedata)
             except:
@@ -121,6 +143,7 @@ class Cluster:
 
             logging.info("Got job %s")
             self.status = f"Working on {messagedata.get('workload_uuid')}"
+            self.rank = messagedata.get("rank")
             callback(
                 messagedata.get("domains"),
                 messagedata.get("workload_uuid"),
@@ -173,6 +196,15 @@ class Cluster:
         socket.connect(f"tcp://{server}:1338")
         socket.send_string(f"{self.topic} {job}")
         socket.close()
+
+
+    def request_finished_jobs(self, workload_uuid: uuid.uuid4):
+        for server in self.servers:
+            context = zmq.Context()
+            socket = context.socket(zmq.PUSH)
+            socket.connect(f"tcp://{server}:1338")
+            socket.send_string(f"{self.topic} SEND_FINISHED_JOBS {workload_uuid}")
+            socket.close()
 
     async def scatter(
         self,

@@ -1,5 +1,7 @@
 #!/bin/python3
 import typing
+import logging
+from sqlalchemy import delete
 from jericho.models import JerichoHtml
 
 
@@ -25,3 +27,17 @@ class HtmlLookup:
                 break
 
             yield res
+
+    def delete_workload(self, workload_uuid: str):
+        """Delete a workload from our database"""
+        try:
+            self.session.execute(
+                delete(JerichoHtml).where(JerichoHtml.workload_uuid == workload_uuid)
+            )
+            return True
+        except Exception as err:
+            logging.warning(
+                "Could not delete the jericho html workload uuid %s because of error %s", workload_uuid, err
+            )
+            self.session.rollback()
+            return False

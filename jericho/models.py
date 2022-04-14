@@ -73,3 +73,10 @@ class JerichoConverter(Base):
     location = Column(String(255))
     time_created = Column(DateTime(timezone=True), server_default=func.now())
     id = Column(Integer, autoincrement=True, primary_key=True)
+
+class JerichoWorkload(Base):
+    __tablename__ = "jericho_workload"
+
+    workload_uuid = Column(String(36))
+    time_created = Column(DateTime(timezone=True), server_default=func.now())
+    id = Column(Integer, autoincrement=True, primary_key=True)
