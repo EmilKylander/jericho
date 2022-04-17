@@ -3,7 +3,7 @@ import logging
 import asyncio
 import asyncssh
 import os
-from jericho.helpers import get_username
+from jericho.helpers import get_username, chunks
 
 
 class Cloud:
@@ -13,11 +13,15 @@ class Cloud:
 
     async def run_client(self, instance):
         """Run the installation synchronously"""
-        logging.info("Logging into server %s", instance["resp"]["ipv4"][0])
+        try:
+            logging.info("Logging into server %s", instance["resp"]["ipv4"][0])
+        except:
+            logging.error("Could not find IPV4 on instance: %s", instance)
+            return False
         while True:
             username = "root"
-            if instance["resp"]['username']:
-                username = instance["resp"]['username']
+            if "username" in instance["resp"]:
+                username = instance["resp"]["username"]
 
             if username == "root":
                 home_directory = "/root"
@@ -50,7 +54,9 @@ class Cloud:
                             f"echo {username}             soft    nofile          50000 >> /etc/security/limits.conf"
                         )
                         await conn.run("ulimit -n 50000")
-                        await conn.run(f"nohup jericho --listen > /{username}/jericho.log 2>&1 &")
+                        await conn.run(
+                            f"nohup jericho --listen > /{username}/jericho.log 2>&1 &"
+                        )
                         self.instances.append(instance["resp"]["ipv4"][0])
                         return True
             except Exception as err:
@@ -87,8 +93,15 @@ class Cloud:
             )
 
         logging.info("Creating %s instances..", num_instances)
-        instances = [self.provider.create() for _ in range(0, num_instances)]
-        instances_created = await asyncio.gather(*instances)
+
+        # Should not create them all at once on Linode, will cause problems
+        instances_created = []
+        l = [0] * num_instances
+        for iteration in chunks(l, 5):
+            logging.info("Asking Linode to create %s instances", len(iteration))
+            instances = [self.provider.create() for _ in range(0, len(iteration))]
+            res = await asyncio.gather(*instances)
+            instances_created = instances_created + res
 
         logging.info("Installing Jericho on %s instances..", num_instances)
         setup_clouds = [self.run_client(instance) for instance in instances_created]

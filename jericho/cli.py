@@ -38,7 +38,7 @@ def import_endpoints(session, filepath: str) -> None:
 def get_records(result_lookup: ResultLookup) -> None:
     """This prints out all of the results we have in our database"""
     for domain in result_lookup.get():
-        print(domain)
+        print(domain[0])
 
 
 def delete_records(result_lookup: ResultLookup) -> None:
@@ -76,10 +76,12 @@ def get_endpoints(endpoints_lookup: EndpointsLookup) -> typing.Any:
     for endpoint in endpoints_lookup.get():
         print(f"{endpoint['endpoint']}\t{endpoint['pattern']}")
 
+
 def get_converter_output(converter_lookup: ConverterLookup) -> typing.Any:
     """This prints out all of the converter results we have in our database"""
     for endpoint in converter_lookup.get():
         print(f"{endpoint['workload_uuid']}\t{endpoint['location']}")
+
 
 async def pull_dns_servers(servers: list) -> typing.Optional[list]:
     async with ClientSession(

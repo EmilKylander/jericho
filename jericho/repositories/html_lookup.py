@@ -37,7 +37,9 @@ class HtmlLookup:
             return True
         except Exception as err:
             logging.warning(
-                "Could not delete the jericho html workload uuid %s because of error %s", workload_uuid, err
+                "Could not delete the jericho html workload uuid %s because of error %s",
+                workload_uuid,
+                err,
             )
             self.session.rollback()
             return False

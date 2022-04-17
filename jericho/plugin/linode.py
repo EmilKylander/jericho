@@ -16,7 +16,7 @@ class Linode:
         self.prefix = "jericho"
         self.instances = []
 
-    async def _analyze_for_errors(self, resp: dict) -> bool:
+    def _analyze_for_errors(self, resp: dict) -> bool:
         """A response at any time can return an error because of an expired token, this private method handles such responses"""
         if "errors" not in resp:
             return False
@@ -25,6 +25,14 @@ class Linode:
             logging.error(
                 "Your Linode token has expired, please create a new one and save it in your configuration file"
             )
+            return True
+
+        if resp["errors"][0]["reason"] == "Please try again":
+            logging.error("Linode faced a temporary error while creating instance..")
+            return True
+
+        if resp["errors"][0]["reason"] == "Too many requests":
+            logging.error("Linode issued a too many requests error")
             return True
 
         return False
@@ -63,9 +71,10 @@ class Linode:
             ) as response:
                 resp = await response.read()
                 resp = json.loads(resp.decode("utf-8"))
-                has_errors = await self._analyze_for_errors(resp)
+                has_errors = self._analyze_for_errors(resp)
                 if has_errors:
-                    sys.exit(0)
+                    res = await self.create()
+                    return {"password": password, "resp": res}
 
                 self.instances.append(name_uuid)
                 return {"password": password, "resp": resp}
@@ -86,9 +95,10 @@ class Linode:
             ) as response:
                 resp = await response.read()
                 obj = json.loads(resp.decode("utf-8"))
-                has_errors = await self._analyze_for_errors(obj)
+                has_errors = self._analyze_for_errors(obj)
                 if has_errors:
-                    sys.exit(0)
+                    res = await self.get_instances(show_all=show_all)
+                    return res
 
                 for row in obj["data"]:
                     if show_all and self.prefix in row["label"]:
@@ -118,7 +128,7 @@ class Linode:
             ) as response:
                 resp = await response.read()
                 obj = json.loads(resp.decode("utf-8"))
-                has_errors = await self._analyze_for_errors(obj)
+                has_errors = self._analyze_for_errors(obj)
                 if has_errors:
                     sys.exit(0)
 
@@ -148,7 +158,7 @@ class Linode:
             ) as response:
                 resp = await response.read()
                 obj = json.loads(resp.decode("utf-8"))
-                has_errors = await self._analyze_for_errors(obj)
+                has_errors = self._analyze_for_errors(obj)
                 if has_errors:
                     sys.exit(0)
 

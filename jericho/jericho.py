@@ -74,7 +74,7 @@ from jericho.cli import (
     get_endpoints,
     upgrade,
     pull_dns_servers,
-    get_converter_output
+    get_converter_output,
 )
 
 from jericho.helpers import (
@@ -82,6 +82,7 @@ from jericho.helpers import (
     logger_convert,
     merge_domains_with_endpoints,
     get_domain_from_endpoint,
+    chunks,
 )
 from jericho.repositories.server_lookup import ServerLookup
 
@@ -371,7 +372,9 @@ dns_server_lookup = DnsServerLookup(session)
 
 output_verifier = OutputVerifier()
 diff = Diff()
-data_bucket = DataBucket(max_size=100000000) # 100Mb (Avoid hitting the max ram when zipping)
+data_bucket = DataBucket(
+    max_size=100000000
+)  # 100Mb (Avoid hitting the max ram when zipping)
 
 CONVERTERS = {"identifier": Identifier()}
 if args.input:
@@ -405,7 +408,7 @@ async def start_aiohttp_loop(
         settings={
             "status": HttpStatusCode.OK.value,
             "timeout": configuration.get("max_get_timeout"),
-            "ignore_multimedia": configuration.get("ignore_multimedia")
+            "ignore_multimedia": configuration.get("ignore_multimedia"),
         },
     ):
         if url is None:
@@ -478,11 +481,16 @@ def receiver(cluster: Cluster):
                 response.get("rank"),
             )
             content = base64.b64decode(response.get("zip"))
-            zip_output_file = open(f"/tmp/{response.get('uuid')}.zip", "w", encoding="utf-8")
-            zip_output_file.write(content.decode('UTF-8','ignore'))
+            zip_output_file = open(
+                f"/tmp/{response.get('uuid')}.zip", "w", encoding="utf-8"
+            )
+            zip_output_file.write(content.decode("UTF-8", "ignore"))
             zip_output_file.close()
 
-            converter_lookup.save(response.get("workload_uuid"), f"/tmp/{response.get('uuid')}.zip")
+            converter_lookup.save(
+                response.get("workload_uuid"), f"/tmp/{response.get('uuid')}.zip"
+            )
+
 
 def execute(
     domains: typing.List[str],
@@ -492,7 +500,7 @@ def execute(
     rank: int,
     endpoints: typing.List,
     dns_cache: typing.List,
-    converter: typing.Optional[str]
+    converter: typing.Optional[str],
 ):
     """This is the main module which will handle all execution"""
 
@@ -552,7 +560,12 @@ def execute(
 
                 logging.info("Parsed %s - Title: %s", record.endpoint, result["title"])
 
-                data_bucket.save((record.endpoint, json.dumps({"content": record.content, "result": result})))
+                data_bucket.save(
+                    (
+                        record.endpoint,
+                        json.dumps({"content": record.content, "result": result}),
+                    )
+                )
 
                 path = data_bucket.get()
 
@@ -563,7 +576,7 @@ def execute(
                     cluster.send_zmq_message(
                         json.dumps(
                             {
-                                "rank": rank, 
+                                "rank": rank,
                                 "type": ClusterResponseType.WEBPAGE_CONTENT.value,
                                 "workload_uuid": workload_uuid,
                                 "uuid": data_bucket.get_uuid(),
@@ -606,7 +619,6 @@ def execute(
                 converter_lookup.save(workload_uuid, new_location)
 
         html_lookup.delete_workload(workload_uuid)
-
 
         if cluster_role == ClusterRole.REPLICA:
             cluster.send_zmq_message(ClusterResponseType.FINISHED.value)
@@ -654,7 +666,6 @@ def execute(
 def run() -> None:
     """This initializes the business logic"""
     global NAMESERVERS
-
 
     # TODO: This updates every time now..
     if not args.nameservers and not args.resolve_list:
@@ -709,7 +720,7 @@ def run() -> None:
                     domains_loaded,
                     NAMESERVERS,
                     DNS_CACHE,
-                    args.converter
+                    args.converter,
                 )
             )
 
@@ -730,7 +741,7 @@ def run() -> None:
             rank=0,
             endpoints=endpoints,
             dns_cache=DNS_CACHE,
-            converter=args.converter
+            converter=args.converter,
         )
 
     # Combine all of the replica results and save it to the ClusterRole.SOURCE database
@@ -742,6 +753,7 @@ def run() -> None:
         )
 
     logging.info("Done!")
+
 
 def main() -> typing.Any:
     """The main module"""
@@ -778,7 +790,9 @@ def main() -> typing.Any:
         run()
 
     if args.listen:
-        cluster.listen_for_jobs(callback=execute, converter_lookup=ConverterLookup(session))
+        cluster.listen_for_jobs(
+            callback=execute, converter_lookup=ConverterLookup(session)
+        )
 
     if args.delete_converter_result:
         converter_lookup = ConverterLookup(session)
@@ -847,8 +861,9 @@ def main() -> typing.Any:
         servers = asyncio.run(cloud.setup(args.setup_linodes))
         for server in servers:
             server_lookup.save(server)
+
         print(
-            f"We have created {len(servers)} linodes and installed Jericho. To use them run jericho --use-servers --input yourdomainlist.txt"
+            f"We have created {args.setup_linodes} linodes and installed Jericho. To use them run jericho --use-servers --input yourdomainlist.txt"
         )
 
     if args.delete_linodes:

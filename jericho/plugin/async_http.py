@@ -10,9 +10,15 @@ import aiohttp.client_exceptions
 from aiohttp.client_reqrep import ClientResponse
 from urllib.parse import urlparse
 
-from jericho.helpers import add_missing_schemes_to_domain, split_array_by
+from jericho.helpers import (
+    add_missing_schemes_to_domain,
+    split_array_by,
+    is_not_same_domain,
+    get_endpoint,
+)
 from jericho.plugin.cluster import Cluster
 from jericho.enums.cluster_response_type import ClusterResponseType
+
 
 class EmptyDNSResolve(Exception):
     pass
@@ -69,7 +75,9 @@ class AsyncHTTP:
 
         return settings
 
-    async def _get_not_found_html(self, session: ClientSession, url: str, domain: str, redirected: bool = False):
+    async def _get_not_found_html(
+        self, session: ClientSession, url: str, domain: str, redirected: bool = False
+    ):
         not_found_html_bytes = b""
         async with self.lock:
             self.http_requests = self.http_requests + 1
@@ -96,14 +104,20 @@ class AsyncHTTP:
             if str(not_found_response.status)[0] == "3":
                 redirect_url = not_found_response.headers.get("Location")
                 if redirect_url is None:
-                    logging.error("A status %s gave no location header on domain %s", not_found_response.status, url)
+                    logging.error(
+                        "A status %s gave no location header on domain %s",
+                        not_found_response.status,
+                        url,
+                    )
                     return ""
 
                 # Sometimes the Location is a relative path
                 if redirect_url[0] == "/":
                     redirect_url = url + redirect_url
 
-                return (await self._get_not_found_html(session, redirect_url, domain, True))
+                return await self._get_not_found_html(
+                    session, redirect_url, domain, True
+                )
 
             not_found_html_bytes = await not_found_response.read()
 
@@ -244,7 +258,7 @@ class AsyncHTTP:
         session: ClientSession,
         original_url: str,
         domain: str,
-        redirected: bool = False
+        redirected: bool = False,
     ) -> typing.Optional[tuple]:
         """Calls different http methods based on which method was passed to async_http"""
 
@@ -252,14 +266,11 @@ class AsyncHTTP:
             async with self.lock:
                 self.http_requests = self.http_requests + 1
 
-            headers = {
-                "Host": domain,
-                "User-Agent": self.user_agent
-            }
+            headers = {"Host": domain, "User-Agent": self.user_agent}
         else:
-            headers = {
-                "User-Agent": self.user_agent
-            }
+            headers = {"User-Agent": self.user_agent}
+
+        url_to_compare = f"https://{domain}"
 
         async with session.get(
             url,
@@ -270,17 +281,41 @@ class AsyncHTTP:
         ) as response:
             if str(response.status)[0] == "3":
                 redirect_url = response.headers.get("Location")
+
+                original_endpoint = get_endpoint(original_url)
+                if original_endpoint not in redirect_url:
+                    logging.debug(
+                        "The original endpoint %s was not found in the redirected url %s, probably redirected to home or another page",
+                        original_endpoint,
+                        redirect_url,
+                    )
+                    return ()
+
                 logging.debug("Sending a request to redirect url %s", redirect_url)
 
                 if redirect_url is None:
-                    logging.error("A status %s gave no location header on domain %s", response.status, url)
+                    logging.error(
+                        "A status %s gave no location header on domain %s",
+                        response.status,
+                        url,
+                    )
+                    return ()
+
+                if is_not_same_domain(url_to_compare, redirect_url):
+                    logging.debug(
+                        "The domain %s and redirect url %s does not have the same domain",
+                        url_to_compare,
+                        redirect_url,
+                    )
                     return ()
 
                 # Sometimes the Location is a relative path
                 if redirect_url[0] == "/":
                     redirect_url = url + redirect_url
 
-                return (await self._fetch(redirect_url, settings, session, original_url, domain, True))
+                return await self._fetch(
+                    redirect_url, settings, session, original_url, domain, True
+                )
 
             response_content = await self._process_response(
                 url, settings, response, session, domain, original_url
@@ -397,7 +432,7 @@ class AsyncHTTP:
                 logging.critical("The nameserver list is empty")
                 return ""
 
-            nameserver = self.nameservers[random.randint(0, len(self.nameservers)-1)]
+            nameserver = self.nameservers[random.randint(0, len(self.nameservers) - 1)]
 
             logging.debug("Called to get a nameserver: %s", nameserver)
 
@@ -445,7 +480,9 @@ class AsyncHTTP:
 
             await asyncio.sleep(60)
 
-    async def _bound_fetch_loop(self, domains: typing.List[str], settings: dict, session: ClientSession):
+    async def _bound_fetch_loop(
+        self, domains: typing.List[str], settings: dict, session: ClientSession
+    ):
         for link in domains:
             link = add_missing_schemes_to_domain(link)
             try:
@@ -454,7 +491,6 @@ class AsyncHTTP:
                 pass
             async with self.lock:
                 self.finished_requests = self.finished_requests + 1
-
 
     async def _start_event_loop(
         self, session: ClientSession, links: typing.List[str], settings: dict
@@ -477,7 +513,11 @@ class AsyncHTTP:
                 if self.finished_requests == self.domain_list_size:
                     break
                 else:
-                    logging.debug("Finished requests: %s - Total %s", self.finished_requests, self.domain_list_size)
+                    logging.debug(
+                        "Finished requests: %s - Total %s",
+                        self.finished_requests,
+                        self.domain_list_size,
+                    )
             await asyncio.sleep(1)
 
     async def get(

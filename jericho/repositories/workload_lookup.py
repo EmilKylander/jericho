@@ -10,10 +10,7 @@ class WorkloadLookup:
 
     def get(self) -> typing.Generator:
         """Check if a domain exist and if so get the content"""
-        res: list = (
-            self.session.query(JerichoWorkload)
-            .all()
-        )
+        res: list = self.session.query(JerichoWorkload).all()
         return [record.workload_uuid for record in res]
 
     def save(self, workload_uuid: str) -> bool:
@@ -25,6 +22,8 @@ class WorkloadLookup:
             self.session.commit()
             return True
         except Exception as err:
-            logging.warning("Could not save server %s because of error %s", workload_uuid, err)
+            logging.warning(
+                "Could not save server %s because of error %s", workload_uuid, err
+            )
             self.session.rollback()
             return False

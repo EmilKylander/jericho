@@ -7,6 +7,8 @@ from jericho.helpers import (
     merge_domains_with_endpoints,
     chunks,
     split_array_by,
+    is_not_same_domain,
+    get_endpoint,
 )
 
 
@@ -90,3 +92,21 @@ def test_split_array_by_uneven_larger_list_uneven_parts():
         [5, 6, 7, 8],
         [9, 10, 11],
     ]
+
+
+def test_is_not_same_domain_same_domain_return_true():
+    assert (
+        is_not_same_domain("https://google.com/asdasd", "http://google.com/aaaaa")
+        is False
+    )
+
+
+def test_is_not_same_domain_same_domain_return_false():
+    assert (
+        is_not_same_domain("https://yahoo.com/asdasd", "http://google.com/aaaaa")
+        is True
+    )
+
+
+def test_get_endpoint():
+    assert get_endpoint("https://google.com/test.php") == "/test.php"

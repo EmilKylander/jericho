@@ -7,19 +7,22 @@ import os
 from zipfile import ZipFile
 from os.path import basename
 
+
 class DataBucket:
     def __init__(self, max_size):
         logging.debug("Setting the data bucket size to %s", max_size)
 
         if max_size == "ALL":
             _, _, free = shutil.disk_usage("/")
-            self.max_size = int(free - (free * (1 - 0.70))) # Could be unreliable to fill the entire disk
+            self.max_size = int(
+                free - (free * (1 - 0.70))
+            )  # Could be unreliable to fill the entire disk
         else:
             self.max_size = max_size
 
         self.bucket_size: int = 0
         self.bucket: typing.List = []
-        self.temporary_directory = f'/tmp/{uuid.uuid4()}'
+        self.temporary_directory = f"/tmp/{uuid.uuid4()}"
 
         os.mkdir(self.temporary_directory)
 
@@ -30,7 +33,6 @@ class DataBucket:
         logging.debug(
             "Saving %s bytes to bucket (%s) max size", dict_size, self.max_size
         )
-
 
         safe_name = data_to_save[0].replace("/", "_SLASH_")
         file = open(f"{self.temporary_directory}/{safe_name}", "w", encoding="utf-8")
@@ -51,7 +53,7 @@ class DataBucket:
     def empty(self) -> bool:
         logging.debug("Emptying bucket - current size (%s)", self.bucket_size)
         shutil.rmtree(self.temporary_directory)
-        self.temporary_directory = f'/tmp/{uuid.uuid4()}'
+        self.temporary_directory = f"/tmp/{uuid.uuid4()}"
         os.mkdir(self.temporary_directory)
 
         return True
@@ -77,7 +79,7 @@ class DataBucket:
         return total_size
 
     def _zip_directory(self, filename: str, dirname: str):
-        with ZipFile(filename, 'w') as zipObj:
+        with ZipFile(filename, "w") as zipObj:
             for folderName, _, filenames in os.walk(dirname):
                 for filename in filenames:
                     filePath = os.path.join(folderName, filename)

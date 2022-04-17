@@ -4,6 +4,7 @@ import yaml
 import math
 import os
 import pwd
+from urllib.parse import urlparse
 
 
 def load_yaml_file(path: str) -> dict:
@@ -88,3 +89,13 @@ def split_array_by(
 def get_username() -> str:
     """Get the logged in users username"""
     return pwd.getpwuid(os.getuid())[0]
+
+
+def is_not_same_domain(domain1: str, domain2: str) -> bool:
+    return urlparse(domain1).netloc.replace("www.", "") != urlparse(
+        domain2
+    ).netloc.replace("www.", "")
+
+
+def get_endpoint(domain):
+    return urlparse(domain).path

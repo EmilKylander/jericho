@@ -23,12 +23,16 @@ def test_get_size():
 
     assert databucket.get_size() == 7
 
+
 def test_content_is_ok():
     databucket = DataBucket(100)
     assert databucket.save(("https://google.com", "content")) == True
 
-    f = open(f"{databucket.get().replace('.zip', '')}/https:_SLASH__SLASH_google.com", "r")
+    f = open(
+        f"{databucket.get().replace('.zip', '')}/https:_SLASH__SLASH_google.com", "r"
+    )
     assert f.read() == "content"
+
 
 def test_zip_file_exist():
     databucket = DataBucket(100)

@@ -1,5 +1,6 @@
 #!/bin/python3
 
+
 class CustomServer:
     def __init__(self, ip: str, username: str, password: str):
         self.ip = ip
@@ -7,12 +8,14 @@ class CustomServer:
         self.password = password
         self.instances = []
 
-
     async def create(self):
         """Just return the data a gain"""
 
         self.instances.append(self.ip)
-        return {"password": self.password, "resp": {'ipv4': [self.ip], 'username': self.username}}
+        return {
+            "password": self.password,
+            "resp": {"ipv4": [self.ip], "username": self.username},
+        }
 
     async def get_instances(self, show_all=False):
         """Return the IP in an array"""

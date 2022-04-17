@@ -1,4 +1,12 @@
-# 2021-03-06 - 0.3.2
+# 2022-04-17 - 0.3.4
+
+1. Bugfix --get-records should display the domains and not the html
+2. Result identifier is more strict. A result is not valid if it redirects to another domain. A result is not valid if it redirects to a link that does not contain the wanted endpoint
+3. Bugfix should not send all create requests to Linode at once, this leads to a timeout
+4. Added more error management from Linode
+5. Added formatting
+
+# 2022-03-06 - 0.3.2
 
 1. Extended data bucket class to save result to a zip file
 2. Bug fixes

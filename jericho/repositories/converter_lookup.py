@@ -19,7 +19,9 @@ class ConverterLookup:
             self.session.commit()
             return True
         except Exception as err:
-            logging.warning("Could not save converter result %s because of error %s", location, err)
+            logging.warning(
+                "Could not save converter result %s because of error %s", location, err
+            )
             self.session.rollback()
             return False
 
@@ -36,22 +38,22 @@ class ConverterLookup:
 
         return [
             {"workload_uuid": raw_object.workload_uuid, "location": raw_object.location}
-            for raw_object in self.session.query(JerichoConverter).filter(JerichoConverter.workload_uuid == workload_uuid).all()
+            for raw_object in self.session.query(JerichoConverter)
+            .filter(JerichoConverter.workload_uuid == workload_uuid)
+            .all()
         ]
-
 
     def delete_workload(self) -> bool:
         """Delete a workload from our converter database"""
         try:
-            self.session.execute(
-                delete(JerichoConverter)
-            )
+            self.session.execute(delete(JerichoConverter))
             self.session.commit()
 
             return True
         except Exception as err:
             logging.warning(
-                "Could not delete the workload uuid of converters because of error %s", err
+                "Could not delete the workload uuid of converters because of error %s",
+                err,
             )
             self.session.rollback()
             return False

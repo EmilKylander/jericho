@@ -55,7 +55,10 @@ class Cluster:
                     socket.recv().decode("utf-8", "ignore").replace(self.topic, "")
                 ).strip()
             except:
-                logging.warning("Got a timeout on server %s, closing the socket and re-connecting..", server)
+                logging.warning(
+                    "Got a timeout on server %s, closing the socket and re-connecting..",
+                    server,
+                )
                 socket.close()
                 self.get_message_from_replica(server, q)
 
@@ -71,7 +74,13 @@ class Cluster:
         q = queue.Queue()
 
         for server in self.servers:
-            threading.Thread(target=self.get_message_from_replica, args=(server, q, )).start()
+            threading.Thread(
+                target=self.get_message_from_replica,
+                args=(
+                    server,
+                    q,
+                ),
+            ).start()
 
         while True:
             messagedata = q.get()
@@ -95,24 +104,30 @@ class Cluster:
         logging.debug("Listening for jobs")
         while True:
             messagedata = (
-                self.job_socket.recv().decode("utf-8", "ignore").replace(self.topic, "").strip()
+                self.job_socket.recv()
+                .decode("utf-8", "ignore")
+                .replace(self.topic, "")
+                .strip()
             )
             logging.info("Received message %s", messagedata)
 
             if messagedata == "RESTART":
-                if self.status == '':
+                if self.status == "":
                     continue
 
                 logging.info("Got a reboot message!")
-                os.system("echo 'pkill -9 python3 && nohup jericho --listen &' > /tmp/restart.sh && chmod +x /tmp/restart.sh && bash -c /tmp/restart.sh")
+                os.system(
+                    "echo 'pkill -9 python3 && nohup jericho --listen &' > /tmp/restart.sh && chmod +x /tmp/restart.sh && bash -c /tmp/restart.sh"
+                )
                 return False
 
             if messagedata == "UPGRADE":
                 logging.info("Got a upgrade message!")
                 os.system("jericho --upgrade")
-                os.system("echo 'pkill -9 python3 && nohup jericho --listen &' > /tmp/restart.sh && chmod +x /tmp/restart.sh && bash -c /tmp/restart.sh")
+                os.system(
+                    "echo 'pkill -9 python3 && nohup jericho --listen &' > /tmp/restart.sh && chmod +x /tmp/restart.sh && bash -c /tmp/restart.sh"
+                )
                 return False
-
 
             if "SEND_FINISHED_JOBS" in messagedata:
                 workload_uuid = messagedata.replace("SEND_FINISHED_JOBS ", "")
@@ -125,7 +140,7 @@ class Cluster:
                     self.send_zmq_message(
                         json.dumps(
                             {
-                                "rank": self.rank, 
+                                "rank": self.rank,
                                 "type": ClusterResponseType.WEBPAGE_CONTENT.value,
                                 "workload_uuid": workload_uuid,
                                 "uuid": job.get("location").replace("/tmp/", ""),
@@ -152,9 +167,9 @@ class Cluster:
                 messagedata.get("rank"),
                 messagedata.get("endpoints"),
                 messagedata.get("dns_cache"),
-                messagedata.get("converter")
+                messagedata.get("converter"),
             )
-            self.status = ''
+            self.status = ""
 
     async def _restart_server(self, server):
         logging.info("Sending a restart message to %s", server)
@@ -171,7 +186,7 @@ class Cluster:
         rank: int,
         server: str,
         dns_cache: typing.List,
-        converter: typing.Optional[str]
+        converter: typing.Optional[str],
     ):
         await self._restart_server(server)
 
@@ -187,7 +202,7 @@ class Cluster:
                 "nameservers": internal_data.get("nameservers"),
                 "rank": rank,
                 "dns_cache": dns_cache,
-                "converter": converter
+                "converter": converter,
             }
         )
 
@@ -196,7 +211,6 @@ class Cluster:
         socket.connect(f"tcp://{server}:1338")
         socket.send_string(f"{self.topic} {job}")
         socket.close()
-
 
     def request_finished_jobs(self, workload_uuid: uuid.uuid4):
         for server in self.servers:
@@ -214,7 +228,7 @@ class Cluster:
         domains_loaded: typing.List[str],
         nameservers: typing.List[str],
         dns_cache: typing.List,
-        converter: typing.Optional[str]
+        converter: typing.Optional[str],
     ):
         splitted_list = split_array_by(domains_loaded, len(self.servers))
         logging.info(
@@ -222,7 +236,7 @@ class Cluster:
             len(self.servers),
             len(splitted_list),
         )
-        rank = 1 # A replica always start with the rank 1 because rank 0 is main
+        rank = 1  # A replica always start with the rank 1 because rank 0 is main
         index = 0
         for split_list in splitted_list:
             internal_data = {
@@ -230,12 +244,17 @@ class Cluster:
                 "endpoints": endpoints,
                 "configuration": configuration,
                 "nameservers": nameservers,
-                "converter": converter
+                "converter": converter,
             }
 
             asyncio.ensure_future(
                 self.start_jericho_on_replica(
-                    workload_uuid, internal_data, rank, self.servers[index], dns_cache, converter
+                    workload_uuid,
+                    internal_data,
+                    rank,
+                    self.servers[index],
+                    dns_cache,
+                    converter,
                 )
             )
             rank = rank + 1
@@ -249,11 +268,7 @@ class Cluster:
         socket.send_string(f"{self.topic} UPGRADE")
         socket.close()
 
-    def upgrade_servers(
-        self,
-        servers
-    ):
+    def upgrade_servers(self, servers):
         """Send a upgrade message to all servers"""
         for server in servers:
             self._send_upgrade_message(server)
-            

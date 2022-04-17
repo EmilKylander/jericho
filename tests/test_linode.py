@@ -5,15 +5,31 @@ from jericho.plugin.linode import Linode
 from aioresponses import aioresponses
 
 
-async def test__analyze_for_errors_response_ok():
+def test__analyze_for_errors_response_ok():
     linode = Linode({"token": ""})
-    resp = await linode._analyze_for_errors({"response": "ok"})
+    resp = linode._analyze_for_errors({"response": "ok"})
     assert resp == False
 
 
-async def test__analyze_for_errors_response_error():
+def test__analyze_for_errors_response_error():
     linode = Linode({"token": ""})
-    resp = await linode._analyze_for_errors({"errors": [{"reason": "Invalid Token"}]})
+    resp = linode._analyze_for_errors({"errors": [{"reason": "Invalid Token"}]})
+    assert resp == True
+
+
+def test__analyze_for_errors_response_error_temp_error():
+    linode = Linode({"token": ""})
+    resp = linode._analyze_for_errors(
+        {"errors": [{"reason": "Please try again"}]}
+    )
+    assert resp == True
+
+
+def test__analyze_for_errors_response_error_too_many_requests():
+    linode = Linode({"token": ""})
+    resp = linode._analyze_for_errors(
+        {"errors": [{"reason": "Too many requests"}]}
+    )
     assert resp == True
 
 
