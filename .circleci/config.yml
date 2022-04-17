@@ -24,18 +24,30 @@ jobs:
     machine:
       image: ubuntu-1604:202010-01
     steps:
+      - run:
+            name: Install git for checkout
+            command: |
+                apt-get update && apt-get --no-install-recommends -y install git
       - checkout
       - run: cd tests/integration/test-standalone && docker-compose up --build --abort-on-container-exit
   cluster-test:
     machine:
       image: ubuntu-1604:202010-01
     steps:
+      - run:
+            name: Install git for checkout
+            command: |
+                apt-get update && apt-get --no-install-recommends -y install git
       - checkout
       - run: cd tests/integration/test-cluster && docker-compose up --build --abort-on-container-exit
   converter-test:
     machine:
       image: ubuntu-1604:202010-01
     steps:
+      - run:
+            name: Install git for checkout
+            command: |
+                apt-get update && apt-get --no-install-recommends -y install git
       - checkout
       - run: cd tests/integration/test-converter && docker-compose up --build --abort-on-container-exit
 
