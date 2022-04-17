@@ -27,7 +27,7 @@ jobs:
       - run:
             name: Install git for checkout
             command: |
-                sudo apt-get update && apt-get --no-install-recommends -y install git && echo -e '[url "https://github.com/"]\n  insteadOf = "git://github.com/"' >> ~/.gitconfig
+                sudo apt-get update && sudo apt-get --no-install-recommends -y install git && echo -e '[url "https://github.com/"]\n  insteadOf = "git://github.com/"' >> ~/.gitconfig
       - checkout
       - run: cd tests/integration/test-standalone && docker-compose up --build --abort-on-container-exit
   cluster-test:
@@ -37,7 +37,7 @@ jobs:
       - run:
             name: Install git for checkout
             command: |
-                sudo apt-get update && apt-get --no-install-recommends -y install git && echo -e '[url "https://github.com/"]\n  insteadOf = "git://github.com/"' >> ~/.gitconfig
+                sudo apt-get update && sudo apt-get --no-install-recommends -y install git && echo -e '[url "https://github.com/"]\n  insteadOf = "git://github.com/"' >> ~/.gitconfig
       - checkout
       - run: cd tests/integration/test-cluster && docker-compose up --build --abort-on-container-exit
   converter-test:
@@ -47,7 +47,7 @@ jobs:
       - run:
             name: Install git for checkout
             command: |
-                sudo apt-get update && apt-get --no-install-recommends -y install git && echo -e '[url "https://github.com/"]\n  insteadOf = "git://github.com/"' >> ~/.gitconfig
+                sudo apt-get update && sudo apt-get --no-install-recommends -y install git && echo -e '[url "https://github.com/"]\n  insteadOf = "git://github.com/"' >> ~/.gitconfig
       - checkout
       - run: cd tests/integration/test-converter && docker-compose up --build --abort-on-container-exit
 
