@@ -1,4 +1,4 @@
-FROM ubuntu:21.10 as base
+FROM ubuntu:22.04 as base
 WORKDIR /root/jerichosrc
 ARG DEBIAN_FRONTEND=noninteractive
 
