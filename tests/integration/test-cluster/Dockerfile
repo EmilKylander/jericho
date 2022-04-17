@@ -2,14 +2,7 @@ FROM ubuntu:20.04 as base
 WORKDIR /root/jerichosrc
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && \
-      apt-get -y install sudo
-
-RUN useradd -m docker && echo "docker:docker" | chpasswd && adduser docker sudo
-
-USER docker
-
-RUN sudo apt-get update --fix-missing && sudo apt-get install -y apt-transport-https python3-pip python3-dev ssh software-properties-common dnsutils
+RUN apt-get update --fix-missing && apt-get install -y apt-transport-https python3-pip python3-dev ssh software-properties-common dnsutils
 COPY . .
 RUN python3 setup.py install
 RUN cat /dev/zero | ssh-keygen -q -N ""

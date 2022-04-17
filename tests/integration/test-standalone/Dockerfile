@@ -1,16 +1,9 @@
-FROM ubuntu:22.04 as base
+FROM ubuntu:20.04 as base
 WORKDIR /app
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && \
-      apt-get -y install sudo
-
-RUN useradd -m docker && echo "docker:docker" | chpasswd && adduser docker sudo
-
-USER docker
-
-RUN sudo apt-get update --fix-missing && sudo apt-get install -y apt-transport-https
-RUN sudo apt install libopenmpi-dev python3-pip python3-dev ssh software-properties-common dnsutils -y
+RUN apt-get update --fix-missing && apt-get install -y apt-transport-https
+RUN apt install libopenmpi-dev python3-pip python3-dev ssh software-properties-common dnsutils -y
 RUN echo 'btl_base_warn_component_unused = 0' > /etc/openmpi/openmpi-mca-params.conf 
 COPY . .
 RUN python3 setup.py install
