@@ -2,7 +2,7 @@ FROM ubuntu:22.04 as base
 WORKDIR /root/jerichosrc
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN chmod 777 /etc/apt/trusted.gpg.d/ubuntu-keyring-2012-cdimage.gpg && apt-get update --fix-missing && apt-get install -y apt-transport-https python3-pip python3-dev ssh software-properties-common openssh-server dnsutils
+RUN chmod 777 /etc/apt/trusted.gpg.d/ubuntu* && apt-get update --fix-missing && apt-get install -y apt-transport-https python3-pip python3-dev ssh software-properties-common openssh-server dnsutils
 COPY . .
 RUN python3 setup.py install
 RUN jericho --import-endpoints tests/integration/test-cluster/endpoints.json
