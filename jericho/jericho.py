@@ -36,6 +36,7 @@ import aiosqlite
 import uvloop
 import base64
 import shutil
+import sys
 from threading import Thread
 from sqlalchemy.orm import sessionmaker
 from jericho.plugin.async_http import AsyncHTTP
@@ -82,9 +83,13 @@ from jericho.helpers import (
     logger_convert,
     merge_domains_with_endpoints,
     get_domain_from_endpoint,
-    chunks,
 )
 from jericho.repositories.server_lookup import ServerLookup
+
+if sys.platform == 'win32':
+    # Set the policy to prevent "Event loop is closed" error on Windows - https://github.com/encode/httpx/issues/914
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 
 # Instantiate the parser
 parser = argparse.ArgumentParser(description="Optional app description")
