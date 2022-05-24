@@ -676,6 +676,7 @@ def run() -> None:
             dns_server_lookup.delete_all()
             for server in dns_servers:
                 dns_server_lookup.save(server)
+        dns_server_lookup.commit()
 
         NAMESERVERS = dns_server_lookup.get_all()
 
@@ -733,6 +734,7 @@ def run() -> None:
                 logging.error("No endpoint patterns was supplied")
                 return []
 
+        # Split list
         execute(
             domains_loaded,
             workload_uuid,

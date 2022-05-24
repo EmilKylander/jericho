@@ -30,7 +30,6 @@ class DnsServerLookup:
         try:
             result = JerichoDnsServers(server=server)
             self.session.add(result)
-            self.session.commit()
             logging.debug("Added dns server %s", server)
             return True
         except Exception as err:
@@ -39,3 +38,6 @@ class DnsServerLookup:
             )
             self.session.rollback()
             return False
+
+    def commit(self):
+        self.session.commit()
