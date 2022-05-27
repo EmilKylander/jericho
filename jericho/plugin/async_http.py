@@ -232,11 +232,13 @@ class AsyncHTTP:
 
                 # 11 = "Could not contact DNS servers"
                 # If this error happens we suspect we have a list with bad DNS servers
-                #
+                # Could also be rate limiting
+
                 if errno == 11:
-                    logging.warning(
-                        "The DNS server %s is unresponsive",
+                    logging.debug(
+                        "The DNS server %s is unresponsive (Try %s)",
                         nameserver,
+                        attempt
                     )
 
                     logging.debug("Done removing DNS server %s", nameserver)
@@ -385,19 +387,19 @@ class AsyncHTTP:
                 logging.debug("Got a response from %s", url)
             logging.debug("Done with fetch on %s", url)
         except aiohttp.ClientConnectorError as err:
-            logging.info("Got a client timeout from url %s, error: %s", url, err)
+            logging.debug("Got a client timeout from url %s, error: %s", url, err)
 
         except asyncio.TimeoutError as err:
 
-            logging.info("Got a timeout from url %s, error: %s", url, err)
+            logging.debug("Got a timeout from url %s, error: %s", url, err)
             async with self.lock:
                 self.timeouts = self.timeouts + 1
 
         except aiohttp.ClientConnectorSSLError:
-            logging.info("Got a SSL connection error on url %s", url)
+            logging.debug("Got a SSL connection error on url %s", url)
 
         except aiohttp.ClientOSError as err:
-            logging.info(
+            logging.debug(
                 "Got client OS error on %s - most likely client reset by peer: %s",
                 url,
                 err,
