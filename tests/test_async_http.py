@@ -1,8 +1,23 @@
 from jericho.plugin.async_http import AsyncHTTP
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from jericho.models import *
+from sqlalchemy.ext.declarative import declarative_base
+
+
+engine = create_engine("sqlite:///:memory:", echo=True)
+Base.metadata.create_all(engine)
+
+Session = sessionmaker(bind=engine)
+session = Session()
+
+from jericho.repositories.dns_cache_lookup import DnsCacheLookup
 
 TEST_URL = "https://google.com"
 
+dns_cache_lookup = DnsCacheLookup(session)
 
 class AsyncMock:
     def __init__(self):
@@ -58,6 +73,7 @@ async def test__run_with_get(monkeypatch):
         nameservers=["8.8.8.8"],
         rank=1,
         cluster=cluster_mock,
+        dns_cache_lookup=dns_cache_lookup
     )
     monkeypatch.setattr("aiohttp.ClientSession.get", mock_client_get)
     async for entry in async_http.get(
@@ -89,6 +105,7 @@ async def test__run_with_get_ignore_image(monkeypatch):
         nameservers=["8.8.8.8"],
         rank=1,
         cluster=cluster_mock,
+        dns_cache_lookup=dns_cache_lookup
     )
     monkeypatch.setattr("aiohttp.ClientSession.get", mock_client_get)
     async for entry in async_http.get(
@@ -107,6 +124,7 @@ def test__is_multi_media():
         nameservers=["8.8.8.8"],
         rank=1,
         cluster=cluster_mock,
+        dns_cache_lookup=dns_cache_lookup
     )
     assert a._is_multi_media("image/png") is True
 
@@ -120,5 +138,6 @@ def test__is_multi_media_false_with_html():
         nameservers=["8.8.8.8"],
         rank=1,
         cluster=cluster_mock,
+        dns_cache_lookup=dns_cache_lookup
     )
     assert a._is_multi_media("text/html") is False

@@ -82,3 +82,11 @@ class JerichoWorkload(Base):
     workload_uuid = Column(String(36))
     time_created = Column(DateTime(timezone=True), server_default=func.now())
     id = Column(Integer, autoincrement=True, primary_key=True)
+
+class JerichoDnsCacheLookup(Base):
+    __tablename__ = "jericho_dns_cache_lookup"
+
+    domain     = Column(String(255))
+    ip_address = Column(String(255))
+    time_created = Column(DateTime(timezone=True), server_default=func.now())
+    id = Column(Integer, autoincrement=True, primary_key=True)

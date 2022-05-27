@@ -18,6 +18,7 @@ from jericho.helpers import (
 )
 from jericho.plugin.cluster import Cluster
 from jericho.enums.cluster_response_type import ClusterResponseType
+from jericho.repositories.dns_cache_lookup import DnsCacheLookup
 
 
 class EmptyDNSResolve(Exception):
@@ -31,6 +32,7 @@ class AsyncHTTP:
         dns_cache: dict,
         max_requests: int,
         cluster: Cluster,
+        dns_cache_lookup: DnsCacheLookup,
         rank: int,
     ):
         """Initialize default values"""
@@ -47,6 +49,7 @@ class AsyncHTTP:
         self.max_requests: int = max_requests
         self.user_agent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
         self.cluster: Cluster = cluster
+        self.dns_cache_lookup = dns_cache_lookup
         self.rank: int = rank
         self.domain_list_size: int = 0
         self.finished_requests: int = 0
@@ -276,7 +279,6 @@ class AsyncHTTP:
             url,
             ssl=False,
             allow_redirects=False,
-            timeout=10,
             headers=headers,
         ) as response:
             if str(response.status)[0] == "3":
@@ -337,6 +339,10 @@ class AsyncHTTP:
 
         # If we get a potential relevant result we are going to send a page to a 404 page,
         # here we re-use the previous dns lookup
+        ip_from_database = await self.dns_cache_lookup.find_ip(domain)
+        if ip_from_database:
+            return url.replace(domain, ip_from_database), domain
+
         if domain in self.dns_cache:
             logging.debug(
                 "Using dns cache for domain %s with ip %s",
@@ -351,7 +357,7 @@ class AsyncHTTP:
             return None, None
 
         # Save the ip address in the cache
-        self.dns_cache[domain] = ip_address
+        await self.dns_cache_lookup.save(domain, ip_address)
 
         # Replace the domain in the url with the ip address
         return url.replace(domain, ip_address), domain
@@ -471,7 +477,7 @@ class AsyncHTTP:
                     dns_requests,
                     dns_responses,
                     len(self.nameservers),
-                    len(self.dns_cache),
+                    len(self.dns_cache), # Should get from the db
                     timeouts,
                 )
 
@@ -545,8 +551,12 @@ class AsyncHTTP:
             ),
             cookie_jar=aiohttp.DummyCookieJar(),
         )
+
+        await self.dns_cache_lookup.connect_db()
+
         async for result in self._start_event_loop(session, links, settings):
             logging.debug("Saving domain %s", result[0])
             yield result
 
         await session.close()
+        await self.dns_cache_lookup.close()

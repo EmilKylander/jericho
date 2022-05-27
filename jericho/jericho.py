@@ -57,7 +57,7 @@ from jericho.repositories.html_lookup import HtmlLookup
 from jericho.repositories.dns_server_lookup import DnsServerLookup
 from jericho.repositories.converter_lookup import ConverterLookup
 from jericho.repositories.workload_lookup import WorkloadLookup
-
+from jericho.repositories.dns_cache_lookup import DnsCacheLookup
 from jericho.converters.identifier import Identifier
 
 from jericho.models import Base
@@ -294,6 +294,7 @@ session = Session()
 
 
 server_lookup = ServerLookup(session)
+dns_cache_lookup = DnsCacheLookup(session)
 
 args = parser.parse_args()
 
@@ -400,6 +401,7 @@ async def start_aiohttp_loop(
         max_requests=MAX_REQUESTS,
         cluster=cluster,
         rank=rank,
+        dns_cache_lookup=dns_cache_lookup
     )
 
     logging.debug("Merging domains and endpoints")
