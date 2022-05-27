@@ -16,7 +16,6 @@ class DnsCacheLookup:
 
     async def connect_db(self):
         "connect to the database"
-        print(f"/{str(Path.home())}/jericho/jericho.db")
         self.db = await aiosqlite.connect(f"{str(Path.home())}/jericho/jericho.db")
 
     async def find_ip(self, domain: str) -> typing.Optional[str]:

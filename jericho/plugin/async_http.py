@@ -5,6 +5,7 @@ import aiodns
 import json
 import random
 import socket
+import idna
 from aiohttp import ClientSession
 import aiohttp.client_exceptions
 from aiohttp.client_reqrep import ClientResponse
@@ -343,6 +344,11 @@ class AsyncHTTP:
         # here we re-use the previous dns lookup
         ip_from_database = await self.dns_cache_lookup.find_ip(domain)
         if ip_from_database:
+            logging.debug(
+                "Using dns cache for domain %s with ip %s",
+                domain,
+                ip_from_database,
+            )
             return url.replace(domain, ip_from_database), domain
 
         if domain in self.dns_cache:
@@ -472,7 +478,7 @@ class AsyncHTTP:
                 )
             else:
                 logging.info(
-                    "Statistics: Request per second: %s - Domain list size: %s - HTTP Requests: %s - DNS Requests: %s - DNS Responses: %s - DNS server list: %s - DNS Cache: %s - Timeouts: %s",
+                    "Statistics: Request per second: %s - Domain list size: %s - HTTP Requests: %s - DNS Requests: %s - DNS Responses: %s - DNS server list: %s - DNS Cache: %s - Timeouts: %s - Unhandled responses: %s",
                     req_per_sec,
                     self.domain_list_size,
                     finished_requests,
@@ -481,6 +487,7 @@ class AsyncHTTP:
                     len(self.nameservers),
                     len(self.dns_cache), # Should get from the db
                     timeouts,
+                    len(self.responses)
                 )
 
             async with self.lock:
