@@ -20,7 +20,7 @@ from jericho.helpers import (
 from jericho.plugin.cluster import Cluster
 from jericho.enums.cluster_response_type import ClusterResponseType
 from jericho.repositories.dns_cache_lookup import DnsCacheLookup
-
+from jericho.helpers import merge_domains_with_endpoints
 
 class EmptyDNSResolve(Exception):
     pass
@@ -542,30 +542,32 @@ class AsyncHTTP:
 
         settings = self._parse_settings(settings)
 
-        # If we have a domain list with 100 domains as input then those 100 domains
-        # can be saved in a way that related domains are near eachother.
-        # Example: First 30 domains are taobao.com subdomains, all of them resolve to 1.2.3.4
-        # This causes 30 GET requests to the same server in a short time, which could cause a DoS
-        # or the server closing the connection. To mitigate this we shuffle the domain list before
-        # continuing.
-        random.shuffle(links)
+        hasEndpoints = False
+        if settings.get("endpoints"):
+            if len(settings.get("endpoints")) > 0:
+                hasEndpoints = True
 
-        session = ClientSession(
-            connector=aiohttp.TCPConnector(
-                ssl=False,
-                enable_cleanup_closed=True,
-                family=socket.AF_INET,
-                force_close=True,
-                limit=self.max_requests,
-            ),
-            cookie_jar=aiohttp.DummyCookieJar(),
-        )
+        parts = split_array_by(links, 1000)
+        for domain_part in parts:
+            if hasEndpoints:
+                domain_part = merge_domains_with_endpoints(settings.get("endpoints"), domain_part)
 
-        await self.dns_cache_lookup.connect_db()
+            session = ClientSession(
+                connector=aiohttp.TCPConnector(
+                    ssl=False,
+                    enable_cleanup_closed=True,
+                    family=socket.AF_INET,
+                    force_close=True,
+                    limit=self.max_requests,
+                ),
+                cookie_jar=aiohttp.DummyCookieJar(),
+            )
 
-        async for result in self._start_event_loop(session, links, settings):
-            logging.debug("Saving domain %s", result[0])
-            yield result
+            await self.dns_cache_lookup.connect_db()
 
-        await session.close()
-        await self.dns_cache_lookup.close()
+            async for result in self._start_event_loop(session, domain_part, settings):
+                logging.debug("Saving domain %s", result[0])
+                yield result
+
+            await session.close()
+            await self.dns_cache_lookup.close()

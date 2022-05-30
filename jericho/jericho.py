@@ -404,10 +404,6 @@ async def start_aiohttp_loop(
         dns_cache_lookup=dns_cache_lookup
     )
 
-    logging.debug("Merging domains and endpoints")
-    if len(endpoints) != 0:
-        send_domains = merge_domains_with_endpoints(endpoints, send_domains)
-
     workload_uuid = settings.get("workload_uuid")
     logging.debug("Starting async loop")
     async for url, html, headers, not_found_html in async_http.get(
@@ -416,6 +412,7 @@ async def start_aiohttp_loop(
             "status": HttpStatusCode.OK.value,
             "timeout": configuration.get("max_get_timeout"),
             "ignore_multimedia": configuration.get("ignore_multimedia"),
+            "endpoints": endpoints
         },
     ):
         if url is None:
