@@ -20,12 +20,17 @@ class DnsCacheLookup:
 
     async def find_ip(self, domain: str) -> typing.Optional[str]:
         """Check if a domain exist and if so get the content"""
-        cursor = await self.db.execute("SELECT * FROM jericho_dns_cache_lookup WHERE domain=?", (domain, ))
-        rows = await cursor.fetchall()
-        if len(rows) == 0:
-            return None
+        try:
+            cursor = await self.db.execute("SELECT * FROM jericho_dns_cache_lookup WHERE domain=?", (domain, ))
+            rows = await cursor.fetchall()
+            if len(rows) == 0:
+                return None
 
-        return rows[0][1]
+            return rows[0][1]
+        except Exception as error:
+            logging.error("Could not find ip because of query error")
+        finally:
+            cursor.close()
 
     async def save(self, domain: str, ip_address: str) -> bool:
         """Save the ip address of a domain"""
@@ -36,12 +41,13 @@ class DnsCacheLookup:
                 (domain, ip_address, ),
             )
             await self.db.commit()
-            await cursor.close()
             return True
         except Exception as error:
             logging.error("Could not save ip address of domain %s because of error %s", domain, error)
             await self.db.rollback()
             return False
+        finally:
+            await cursor.close()
 
     async def close(self):
         await self.db.close()
