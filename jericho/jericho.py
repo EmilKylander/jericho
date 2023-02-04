@@ -37,9 +37,10 @@ import uvloop
 import base64
 import shutil
 import sys
+from urllib.parse import urlparse
 from threading import Thread
 from sqlalchemy.orm import sessionmaker
-from jericho.plugin.async_http import AsyncHTTP
+from jericho.plugin.async_engine import AsyncEngine
 from jericho.plugin.investigate import Investigate
 from jericho.plugin.diff import Diff
 from jericho.plugin.output_verifier import OutputVerifier
@@ -55,10 +56,8 @@ from jericho.repositories.result_lookup import ResultLookup
 from jericho.repositories.endpoints_lookup import EndpointsLookup
 from jericho.repositories.html_lookup import HtmlLookup
 from jericho.repositories.dns_server_lookup import DnsServerLookup
-from jericho.repositories.converter_lookup import ConverterLookup
 from jericho.repositories.workload_lookup import WorkloadLookup
 from jericho.repositories.dns_cache_lookup import DnsCacheLookup
-from jericho.converters.identifier import Identifier
 
 from jericho.models import Base
 
@@ -74,8 +73,7 @@ from jericho.cli import (
     delete_endpoints,
     get_endpoints,
     upgrade,
-    pull_dns_servers,
-    get_converter_output,
+    pull_dns_servers
 )
 
 from jericho.helpers import (
@@ -83,6 +81,7 @@ from jericho.helpers import (
     logger_convert,
     merge_domains_with_endpoints,
     get_domain_from_endpoint,
+    permutate_url_paths
 )
 from jericho.repositories.server_lookup import ServerLookup
 
@@ -158,12 +157,6 @@ parser.add_argument(
     "--log-level",
     type=str,
     help="Set the Jericho log level. This overwrides the log level specified in configuration. Available modes: debug, info, warn, error, fatal, critical. Default: info",
-)
-
-parser.add_argument(
-    "--converter",
-    type=str,
-    help="You can also use Jericho as a form of web scraper, you need to specify a converter. Currently 'identifier' is available, read the documentation for more information. When this flag is set no endpoints will be appended or processed.",
 )
 
 parser.add_argument(
@@ -257,18 +250,6 @@ parser.add_argument(
     help="Start a Jericho replica that will listen for jobs",
 )
 
-parser.add_argument(
-    "--get-converter-output",
-    action="store_true",
-    help="Get the locations of the compressed result from converter jobs",
-)
-
-parser.add_argument(
-    "--delete-converter-result",
-    action="store_true",
-    help="Delete all of the result which come from the converter",
-)
-
 HOME = str(Path.home())
 
 if not path.exists(f"{HOME}/jericho"):
@@ -294,7 +275,7 @@ session = Session()
 
 
 server_lookup = ServerLookup(session)
-dns_cache_lookup = DnsCacheLookup(session)
+dns_cache_lookup = DnsCacheLookup()
 
 args = parser.parse_args()
 
@@ -382,7 +363,6 @@ data_bucket = DataBucket(
     max_size=100000000
 )  # 100Mb (Avoid hitting the max ram when zipping)
 
-CONVERTERS = {"identifier": Identifier()}
 if args.input:
     input = args.input
 
@@ -392,34 +372,30 @@ async def start_aiohttp_loop(
     endpoints: typing.List,
     settings: dict,
     nameservers: typing.List[str],
-    rank: int,
     dns_cache: typing.List,
 ):
-    async_http = AsyncHTTP(
+    async_engine = AsyncEngine(
         nameservers=nameservers,
-        dns_cache=dns_cache,
-        max_requests=MAX_REQUESTS,
-        cluster=cluster,
-        rank=rank,
-        dns_cache_lookup=dns_cache_lookup
-    )
-
-    workload_uuid = settings.get("workload_uuid")
-    logging.debug("Starting async loop")
-    async for url, html, headers, not_found_html in async_http.get(
-        send_domains,
         settings={
             "status": HttpStatusCode.OK.value,
             "timeout": configuration.get("max_get_timeout"),
             "ignore_multimedia": configuration.get("ignore_multimedia"),
-            "endpoints": endpoints
-        },
+            "dns_cache": dns_cache
+        }
+    )
+
+    workload_uuid = settings.get("workload_uuid")
+    logging.debug("Starting async loop")
+    async for url, html, headers, pattern in async_engine.run(
+        send_domains,
+        endpoints,
     ):
         if url is None:
             continue
+
         while True:
             try:
-                logging.debug("Saving output for %s", url)
+                logging.info("Saving output for %s", url)
 
                 logging.debug(
                     "Accessing database sqlite:///%s/jericho/jericho.db", HOME
@@ -428,17 +404,63 @@ async def start_aiohttp_loop(
 
                 # Using aiosqlite for inserts because we are in an event loop right now and should therefore optimize the speed
                 cursor = await db.execute(
-                    "INSERT OR IGNORE INTO jericho_html(workload_uuid, endpoint, content, headers) VALUES(?, ?, ?, ?)",
-                    (workload_uuid, url, html, json.dumps(dict(headers))),
+                    "INSERT OR IGNORE INTO jericho_html(workload_uuid, endpoint, content, pattern, headers) VALUES(?, ?, ?, ?, ?)",
+                    (workload_uuid, url, html, pattern,json.dumps(dict(headers))),
                 )
                 await db.commit()
+                await cursor.close()
+
+                break
+            except Exception as err:
+                logging.exception(
+                    "Could not save %s to database tables because of error: %s",
+                    url,
+                    err,
+                )
+                await db.rollback()
+            finally:
+                await db.close()
+
+    # Get the results so we can permutate them and check for false positives
+    result_urls = []
+    db = await aiosqlite.connect(f"/{HOME}/jericho/jericho.db")
+    async with db.execute("SELECT * FROM jericho_html WHERE workload_uuid=?", (workload_uuid, )) as cursor:
+        rows = await cursor.fetchall()
+        for row in rows:
+            result_urls.append(row[1])
+    await db.close()
+
+    async_engine = AsyncEngine(
+        nameservers=nameservers,
+        settings={
+            "status": HttpStatusCode.OK.value,
+            "timeout": configuration.get("max_get_timeout"),
+            "ignore_multimedia": configuration.get("ignore_multimedia"),
+            "dns_cache": dns_cache
+        }
+    )
+    # Save the non-existant urls for comparison
+    async for url, html, headers in async_engine.run(
+        permutate_url_paths(result_urls)
+    ):
+        if url is None:
+            continue
+
+        while True:
+            try:
+                logging.info("Saving output for %s", url)
+
+                logging.debug(
+                    "Accessing database sqlite:///%s/jericho/jericho.db", HOME
+                )
+                db = await aiosqlite.connect(f"/{HOME}/jericho/jericho.db")
 
                 cursor = await db.execute(
-                    "INSERT OR IGNORE  INTO jericho_404_caches(domain, content) VALUES(?, ?)",
-                    (get_domain_from_endpoint(url), not_found_html),
+                    "INSERT OR IGNORE INTO jericho_404_caches(url, url_original, content) VALUES(?, ?, ?)",
+                    (url, url.replace('nonexistant404', ''), html),
                 )
-                await db.commit()
 
+                await db.commit()
                 await cursor.close()
 
                 break
@@ -453,6 +475,7 @@ async def start_aiohttp_loop(
                 await db.close()
 
 
+
 def receiver(cluster: Cluster):
     engine = sqlalchemy.create_engine(configuration["jericho_database"])
     Base.metadata.create_all(engine)
@@ -460,10 +483,10 @@ def receiver(cluster: Cluster):
     session = Session()
 
     result_lookup = ResultLookup(session)
-    converter_lookup = ConverterLookup(session)
 
     logging.info("Waiting for result messages..")
     for response in cluster.receive_zmq_message():
+        logging.info("We got a response from a replica %s", response)
         if response.get("type") == ClusterResponseType.RESULT.value:
             logging.info("Saving url %s to source database", response.get("endpoint"))
             result_lookup.save(
@@ -472,46 +495,20 @@ def receiver(cluster: Cluster):
                 response.get("content"),
             )
 
-        if response.get("type") == ClusterResponseType.STATISTICS.value:
-            logging.info(
-                "Statistics (Rank %s) | Finished Requests: %s",
-                response.get("rank"),
-                response.get("finished_requests"),
-            )
-
-        if response.get("type") == ClusterResponseType.WEBPAGE_CONTENT.value:
-            logging.info(
-                "Node %s sent back compressed data",
-                response.get("rank"),
-            )
-            content = base64.b64decode(response.get("zip"))
-            zip_output_file = open(
-                f"/tmp/{response.get('uuid')}.zip", "w", encoding="utf-8"
-            )
-            zip_output_file.write(content.decode("UTF-8", "ignore"))
-            zip_output_file.close()
-
-            converter_lookup.save(
-                response.get("workload_uuid"), f"/tmp/{response.get('uuid')}.zip"
-            )
-
 
 def execute(
     domains: typing.List[str],
     workload_uuid: uuid.uuid4,
     nameservers: typing.List[str],
     configuration: dict,
-    rank: int,
     endpoints: typing.List,
-    dns_cache: typing.List,
-    converter: typing.Optional[str],
+    dns_cache: typing.List
 ):
     """This is the main module which will handle all execution"""
 
     uvloop.install()
 
     notifications_configuration = configuration.get("notifications")
-    converter_configuration = configuration.get("converter_notifications")
 
     result_relevant = ResultRelevant(
         investigate=investigate,
@@ -530,10 +527,6 @@ def execute(
     if notifications_configuration:
         notifications = Notifications(notifications_configuration)
 
-    converter_notifications = None
-    if converter_configuration:
-        converter_notifications = Notifications(converter_configuration)
-
     total_sites = len(domains)
     logging.info("Got %s amount of domains", total_sites)
 
@@ -544,94 +537,18 @@ def execute(
             endpoints,
             settings={
                 "workload_uuid": workload_uuid,
-                "converter_notifications": converter_notifications,
                 "notifications": notifications,
             },
             nameservers=nameservers,
-            rank=rank,
             dns_cache=dns_cache,
         )
     )
 
-    if converter:
-        converter_lookup = ConverterLookup(session)
-        for record_chunk in html_lookup.get_all(workload_uuid):
-            for record in record_chunk:
-                logging.debug("Running the converter on %s", record.endpoint)
-                result = CONVERTERS.get(converter).run(
-                    "", record.endpoint, 200, json.loads(record.headers), record.content
-                )
-
-                logging.info("Parsed %s - Title: %s", record.endpoint, result["title"])
-
-                data_bucket.save(
-                    (
-                        record.endpoint,
-                        json.dumps({"content": record.content, "result": result}),
-                    )
-                )
-
-                path = data_bucket.get()
-
-                if data_bucket.is_full():
-                    with open(path, "rb") as f:
-                        encoded_string = base64.b64encode(f.read()).decode()
-
-                    cluster.send_zmq_message(
-                        json.dumps(
-                            {
-                                "rank": rank,
-                                "type": ClusterResponseType.WEBPAGE_CONTENT.value,
-                                "workload_uuid": workload_uuid,
-                                "uuid": data_bucket.get_uuid(),
-                                "zip": encoded_string,
-                            }
-                        )
-                    )
-                    data_bucket.empty()
-
-                    # Save the result files in case of client crash
-                    if rank >= 1:
-                        new_location = f"/tmp/{uuid.uuid4()}"
-                        shutil.copyfile(path, new_location)
-                        converter_lookup.save(workload_uuid, new_location)
-
-        html_lookup.delete_workload(workload_uuid)
-
-        if not data_bucket.is_empty():
-            path = data_bucket.get()
-            with open(path, "rb") as f:
-                encoded_string = base64.b64encode(f.read()).decode()
-
-            cluster.send_zmq_message(
-                json.dumps(
-                    {
-                        "rank": rank,
-                        "type": ClusterResponseType.WEBPAGE_CONTENT.value,
-                        "workload_uuid": workload_uuid,
-                        "uuid": data_bucket.get_uuid(),
-                        "zip": encoded_string,
-                    }
-                )
-            )
-            data_bucket.empty()
-
-            # Save the result files in case of client crash
-            if rank >= 1:
-                new_location = f"/tmp/{uuid.uuid4()}"
-                shutil.copyfile(path, new_location)
-                converter_lookup.save(workload_uuid, new_location)
-
-        html_lookup.delete_workload(workload_uuid)
-
-        if cluster_role == ClusterRole.REPLICA:
-            cluster.send_zmq_message(ClusterResponseType.FINISHED.value)
-
-        return []
+    logging.info("The loop is finished. Workload UUID: %s", workload_uuid)
 
     for record_chunk in html_lookup.get_all(workload_uuid):
         for record in record_chunk:
-            if not result_relevant.check(record.endpoint, record.content, endpoints):
+            if not result_relevant.check(record.endpoint, record.content, record.pattern):
                 continue
 
             if notifications:
@@ -652,7 +569,7 @@ def execute(
                             "type": ClusterResponseType.RESULT.value,
                             "workload_uuid": workload_uuid,
                             "endpoint": record.endpoint,
-                            "content": record.content,
+                            "content": "",
                         }
                     )
                 )
@@ -696,9 +613,7 @@ def run() -> None:
         domains_loaded = [domain.strip() for domain in lines]
 
     # Get the sources notifications settings so we can send it to the replicas
-    endpoints_from_database = []
-    if not args.converter:
-        endpoints_from_database = endpoints_lookup.get()
+    endpoints_from_database = endpoints_lookup.get()
 
     workload_uuid = str(uuid.uuid4())
 
@@ -724,19 +639,16 @@ def run() -> None:
                     endpoints_from_database,
                     domains_loaded,
                     NAMESERVERS,
-                    DNS_CACHE,
-                    args.converter,
+                    DNS_CACHE
                 )
             )
 
     if not args.use_servers or (args.use_servers and args.include_master):
         logging.info("Scraping domains from the %s", cluster_role)
-        endpoints = []
-        if not args.converter:
-            endpoints = endpoints_lookup.get()
-            if len(endpoints) == 0:
-                logging.error("No endpoint patterns was supplied")
-                return []
+        endpoints = endpoints_lookup.get()
+        if len(endpoints) == 0:
+            logging.error("No endpoint patterns was supplied")
+            return []
 
         # Split list
         execute(
@@ -744,10 +656,8 @@ def run() -> None:
             workload_uuid,
             NAMESERVERS,
             configuration,
-            rank=0,
             endpoints=endpoints,
-            dns_cache=DNS_CACHE,
-            converter=args.converter,
+            dns_cache=DNS_CACHE
         )
 
     # Combine all of the replica results and save it to the ClusterRole.SOURCE database
@@ -779,9 +689,6 @@ def main() -> typing.Any:
     if args.get_endpoints:
         get_endpoints(endpoints_lookup)
 
-    if args.get_converter_output:
-        get_converter_output(ConverterLookup(session))
-
     if args.upgrade:
         upgrade()
 
@@ -797,13 +704,9 @@ def main() -> typing.Any:
 
     if args.listen:
         cluster.listen_for_jobs(
-            callback=execute, converter_lookup=ConverterLookup(session)
+            callback=execute,
+            result_lookup=result_lookup
         )
-
-    if args.delete_converter_result:
-        converter_lookup = ConverterLookup(session)
-        converter_lookup.delete_workload()
-        print("OK")
 
     if args.get_last_workload_uuid:
         workload_lookup = WorkloadLookup(session)

@@ -32,16 +32,15 @@ class ResultLookup:
         """Get all results"""
         if workload_uuid is not None:
             logging.debug("Getting records with workload uuid %s", workload_uuid)
-            records = (
+            return (
                 self.session.query(JerichoResult)
                 .filter(JerichoResult.workload_uuid == workload_uuid)
+                .with_entities(JerichoResult.endpoint, JerichoResult.time_created)
                 .all()
             )
-        else:
-            logging.debug("Getting all records")
-            records = self.session.query(JerichoResult).all()
 
-        return [(record.endpoint, record.content) for record in records]
+        logging.debug("Getting all records")
+        return self.session.query(JerichoResult).with_entities(JerichoResult.endpoint, JerichoResult.time_created).all()
 
     def save(self, workload_uuid: uuid.uuid4, endpoint: str, content: str) -> bool:
         """Save a result"""

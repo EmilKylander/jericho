@@ -9,6 +9,7 @@ from jericho.helpers import (
     split_array_by,
     is_not_same_domain,
     get_endpoint,
+    permutate_url_paths
 )
 
 
@@ -110,3 +111,7 @@ def test_is_not_same_domain_same_domain_return_false():
 
 def test_get_endpoint():
     assert get_endpoint("https://google.com/test.php") == "/test.php"
+
+
+def test_permutate_url_paths():
+    assert permutate_url_paths(["https://google.com/found/result.php", "https://bing.com/robots.txt"]) == ["https://google.com/found/nonexistant404result.php", "https://bing.com/nonexistant404robots.txt"]

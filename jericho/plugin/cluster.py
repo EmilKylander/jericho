@@ -11,7 +11,6 @@ import queue
 import base64
 from jericho.helpers import split_array_by
 from jericho.enums.cluster_response_type import ClusterResponseType
-from jericho.repositories.converter_lookup import ConverterLookup
 
 
 class Cluster:
@@ -22,7 +21,6 @@ class Cluster:
         self.topic = "jericho_event"
         self.finished = 0
         self.status = ""
-        self.rank = 1
 
     def start_zmq_server(self):
         logging.debug("Starting result server")
@@ -41,6 +39,7 @@ class Cluster:
         self.socket.send_string(f"{self.topic} {message}")
 
     def get_message_from_replica(self, server, q):
+        """The replicas send back messages to main. E.g FINISHED and RESULT"""
         context = zmq.Context()
         socket = context.socket(zmq.SUB)
         socket.connect(f"tcp://{server}:1337")
@@ -100,7 +99,7 @@ class Cluster:
             messagedata = json.loads(messagedata)
             yield messagedata
 
-    def listen_for_jobs(self, callback, converter_lookup: ConverterLookup):
+    def listen_for_jobs(self, callback, result_lookup):
         logging.debug("Listening for jobs")
         while True:
             messagedata = (
@@ -129,26 +128,21 @@ class Cluster:
                 )
                 return False
 
-            if "SEND_FINISHED_JOBS" in messagedata:
+            if messagedata == "SEND_FINISHED_JOBS":
                 workload_uuid = messagedata.replace("SEND_FINISHED_JOBS ", "")
-                finished_jobs = converter_lookup.get_workload(workload_uuid)
+                logging.info("Got a request to send back results on %s", workload_uuid)
 
-                for job in finished_jobs:
-                    with open(job.get("location"), "rb") as f:
-                        encoded_string = base64.b64encode(f.read()).decode()
-
-                    self.send_zmq_message(
-                        json.dumps(
-                            {
-                                "rank": self.rank,
-                                "type": ClusterResponseType.WEBPAGE_CONTENT.value,
-                                "workload_uuid": workload_uuid,
-                                "uuid": job.get("location").replace("/tmp/", ""),
-                                "zip": encoded_string,
-                            }
-                        )
+                '''
+                self.send_zmq_message(
+                    json.dumps(
+                        {
+                            "type": ClusterResponseType.RESULT.value,
+                            "workload_uuid": workload_uuid,
+                            "result": result_lookup.get(workload_uuid)
+                        }
                     )
-                continue
+                )
+                '''
 
             try:
                 messagedata = json.loads(messagedata)
@@ -158,16 +152,14 @@ class Cluster:
 
             logging.info("Got job %s")
             self.status = f"Working on {messagedata.get('workload_uuid')}"
-            self.rank = messagedata.get("rank")
+
             callback(
                 messagedata.get("domains"),
                 messagedata.get("workload_uuid"),
                 messagedata.get("nameservers"),
                 messagedata.get("configuration"),
-                messagedata.get("rank"),
                 messagedata.get("endpoints"),
-                messagedata.get("dns_cache"),
-                messagedata.get("converter"),
+                messagedata.get("dns_cache")
             )
             self.status = ""
 
@@ -183,10 +175,8 @@ class Cluster:
         self,
         workload_uuid: str,
         internal_data: dict,
-        rank: int,
         server: str,
-        dns_cache: typing.List,
-        converter: typing.Optional[str],
+        dns_cache: typing.List
     ):
         await self._restart_server(server)
 
@@ -200,9 +190,7 @@ class Cluster:
                 "endpoints": internal_data.get("endpoints"),
                 "configuration": internal_data.get("configuration"),
                 "nameservers": internal_data.get("nameservers"),
-                "rank": rank,
                 "dns_cache": dns_cache,
-                "converter": converter,
             }
         )
 
@@ -227,8 +215,7 @@ class Cluster:
         endpoints: typing.List[str],
         domains_loaded: typing.List[str],
         nameservers: typing.List[str],
-        dns_cache: typing.List,
-        converter: typing.Optional[str],
+        dns_cache: typing.List
     ):
         splitted_list = split_array_by(domains_loaded, len(self.servers))
         logging.info(
@@ -236,28 +223,23 @@ class Cluster:
             len(self.servers),
             len(splitted_list),
         )
-        rank = 1  # A replica always start with the rank 1 because rank 0 is main
         index = 0
         for split_list in splitted_list:
             internal_data = {
                 "domains": split_list,
                 "endpoints": endpoints,
                 "configuration": configuration,
-                "nameservers": nameservers,
-                "converter": converter,
+                "nameservers": nameservers
             }
 
             asyncio.ensure_future(
                 self.start_jericho_on_replica(
                     workload_uuid,
                     internal_data,
-                    rank,
                     self.servers[index],
-                    dns_cache,
-                    converter,
+                    dns_cache
                 )
             )
-            rank = rank + 1
             index = index + 1
 
     def _send_upgrade_message(self, server):

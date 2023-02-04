@@ -19,8 +19,10 @@ class Jericho404Cache(Base):
     __tablename__ = "jericho_404_caches"
     __table_args__ = {"extend_existing": True}
 
-    domain = Column(String(255), primary_key=True)
+    url = Column(String(255))
+    url_original = Column(String(255), primary_key=True)
     content = Column(Text)
+
 
 
 class JerichoProgress(Base):
@@ -46,6 +48,7 @@ class JerichoHtml(Base):
     workload_uuid = Column(String(36))
     endpoint = Column(String(255))
     content = Column(Text)
+    pattern = Column(String(255))
     headers = Column(Text)
     time_created = Column(DateTime(timezone=True), server_default=func.now())
     id = Column(Integer, autoincrement=True, primary_key=True)

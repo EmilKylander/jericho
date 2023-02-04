@@ -33,6 +33,7 @@ class Cloud:
                     username=username,
                     password=instance.get("password"),
                     known_hosts=None,
+                    public_key_auth=False
                 ) as conn:
                     async with conn.start_sftp_client() as sftp:
                         await conn.run("mkdir /tmp/jericho")
@@ -103,10 +104,15 @@ class Cloud:
             res = await asyncio.gather(*instances)
             instances_created = instances_created + res
 
+        print("Waiting for all instances to be come ready")
+        await self.block_until_ready(num_instances)
+
+        # Wait an additional 60 seconds as it might take a while it to be reachable after it's ready
+        print("Waiting for all instances to connection ready")
+        await asyncio.sleep(60)
+
         logging.info("Installing Jericho on %s instances..", num_instances)
         setup_clouds = [self.run_client(instance) for instance in instances_created]
         await asyncio.gather(*setup_clouds)
-
-        await self.block_until_ready(num_instances)
 
         return self.instances

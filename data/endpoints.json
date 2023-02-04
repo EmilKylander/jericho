@@ -880,43 +880,43 @@
       "pattern": "JSON"
   },
   {
-      "endpoint": "application.sh",
+      "endpoint": "/application.sh",
       "pattern": "TEXT"
   },
   {
-      "endpoint": "cleanup.sh",
+      "endpoint": "/cleanup.sh",
       "pattern": "TEXT"
   },
   {
-      "endpoint": "graphite.sh",
+      "endpoint": "/graphite.sh",
       "pattern": "TEXT"
   },
   {
-      "endpoint": "jenkins.sh",
+      "endpoint": "/jenkins.sh",
       "pattern": "TEXT"
   },
   {
-      "endpoint": "nginx.sh",
+      "endpoint": "/nginx.sh",
       "pattern": "TEXT"
   },
   {
-      "endpoint": "update.sh",
+      "endpoint": "/update.sh",
       "pattern": "TEXT"
   },
   {
-      "endpoint": "vagrant.sh",
+      "endpoint": "/vagrant.sh",
       "pattern": "TEXT"
   },
   {
-      "endpoint": "virtualbox.sh",
+      "endpoint": "/virtualbox.sh",
       "pattern": "TEXT"
   },
   {
-      "endpoint": "~config.php",
+      "endpoint": "/~config.php",
       "pattern": "<?php"
   },
   {
-      "endpoint": "~db-config.php",
+      "endpoint": "/~db-config.php",
       "pattern": "<?php"
   }
 ]

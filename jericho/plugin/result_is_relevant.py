@@ -1,6 +1,7 @@
 import logging
 import typing
 import uuid
+from urllib.parse import urlparse
 from jericho.helpers import get_domain_from_endpoint
 from jericho.plugin.investigate import Investigate
 from jericho.plugin.diff import Diff
@@ -29,39 +30,28 @@ class ResultRelevant:
         self.configuration = configuration
         self.workload_uuid = workload_uuid
 
-    def _get_endpoint_from_url(self, url, endpoints):
-        matched_endpoints = []
-        for row in endpoints:
-            if row["endpoint"].rstrip("/") in url.rstrip("/"):
-                matched_endpoints.append(row["endpoint"])
-
-        endpoint_found = max(matched_endpoints, key=len)
-        for endpoint in endpoints:
-            if endpoint["endpoint"] == endpoint_found:
-                return endpoint["pattern"]
-
-    def check(self, url: str, output: str, endpoints: typing.List) -> bool:
+    def check(self, url: str, output: str, pattern: str) -> bool:
         """
         Identify if a result is relevant based if the result has been found before,
         and if the 404 page and the result is too similar, if it is then disregard it
         """
 
-        domain = get_domain_from_endpoint(url)
         logging.debug("Running investigation on %s", url)
-        pattern = self._get_endpoint_from_url(url, endpoints)
         content_analysis = self.investigate.run(url, output, pattern)
 
         if not content_analysis:
+            logging.debug("Content analysis failed")
             return False
 
         # Check if this url has been scanned before
         logging.debug("Checking if %s has been scanned before", url)
 
         if self.result_lookup.find(self.workload_uuid, url):
+            logging.debug("Already exists in result")
             return False
 
         # The 404 page is always saved when we save potential results
-        _, cache_content = self.cache_lookup.find_domain(domain)
+        _, cache_content = self.cache_lookup.find_url(url)
 
         # Check if the content type of the result is the same as the "not found" page
         not_found_page_content_analysis = self.output_verifier.find_content_type(

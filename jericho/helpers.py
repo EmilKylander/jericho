@@ -67,13 +67,13 @@ def merge_domains_with_endpoints(endpoints: list, domains: list) -> typing.Itera
         for domain in domains:
             for endpoint in endpoints:
                 responses.append(
-                    f'{domain}/{endpoint.get("endpoint").lstrip("/").rstrip("/")}'
+                    {'endpoint': f'{domain}{endpoint.get("endpoint")}', 'pattern': endpoint.get("pattern")}
                 )
     else:
         for endpoint in endpoints:
             for domain in domains:
                 responses.append(
-                    f'{domain}/{endpoint.get("endpoint").lstrip("/").rstrip("/")}'
+                    {'endpoint': f'{domain}{endpoint.get("endpoint")}', 'pattern': endpoint.get("pattern")}
                 )
 
     return responses
@@ -99,3 +99,16 @@ def is_not_same_domain(domain1: str, domain2: str) -> bool:
 
 def get_endpoint(domain):
     return urlparse(domain).path
+
+def permutate_url_paths(rows):
+    result_domains = []
+
+    for row in rows:
+        url_analyzed = urlparse(row)
+        paths = urlparse(row).path.split("/")
+        permutated_result = "/nonexistant404" + paths[len(paths)-1]
+        del paths[len(paths)-1]
+        permutated_result = url_analyzed.scheme + "://" + url_analyzed.netloc + "/".join(paths) + permutated_result
+        result_domains.append(permutated_result)
+
+    return result_domains

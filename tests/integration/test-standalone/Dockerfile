@@ -9,4 +9,4 @@ COPY . .
 RUN python3 setup.py install
 RUN export RDMAV_FORK_SAFE=0
 RUN jericho --import-endpoints tests/integration/test-standalone/endpoints.json
-CMD cd tests/integration/test-standalone && python3 generate_hosts.py `dig apache +short` > /resolve.txt && jericho --input host.txt --log-level debug --resolve-list /resolve.txt --max-requests 10 && chmod +x validate.sh && ./validate.sh
+CMD cd tests/integration/test-standalone && python3 generate_hosts.py `dig apache +short` > /resolve.txt && jericho --input host.txt --log-level info --resolve-list /resolve.txt --max-requests 10 && chmod +x validate.sh && ./validate.sh

@@ -1,6 +1,5 @@
 #!/bin/python3
 from jericho.plugin.notifications import Notifications
-from jericho.plugin.async_http import AsyncHTTP
 import pytest
 import asyncio
 import yaml

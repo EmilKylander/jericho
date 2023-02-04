@@ -33,6 +33,7 @@ setup(
         "asyncssh",
         "aiofiles",
         "pyzmq",
+        "async_retrying"
     ],
     # needs to be installed along with your package. Eg: 'caer'
     keywords=["python", "cluster", "security"],

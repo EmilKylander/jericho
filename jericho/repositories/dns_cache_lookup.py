@@ -2,7 +2,7 @@
 import logging
 import typing
 import aiosqlite
-from click import option
+import asyncio
 from sqlalchemy import delete
 from jericho.models import Base
 from jericho.models import JerichoDnsCacheLookup
@@ -10,8 +10,7 @@ from pathlib import Path
 
 
 class DnsCacheLookup:
-    def __init__(self, session):
-        self.session = session
+    def __init__(self):
         self.db = None
 
     async def connect_db(self):
@@ -32,6 +31,7 @@ class DnsCacheLookup:
             except Exception as error:
                 logging.debug("Could not find ip because of error %s - attempt %s", error, attempt)
                 attempt = attempt + 1
+                await asyncio.sleep(1)
 
     async def save(self, domain: str, ip_address: str) -> bool:
         """Save the ip address of a domain"""

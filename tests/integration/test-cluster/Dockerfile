@@ -8,6 +8,7 @@ RUN python3 setup.py install
 RUN cat /dev/zero | ssh-keygen -q -N ""
 RUN echo "    StrictHostKeyChecking no" >> /etc/ssh/ssh_config
 RUN echo "    UserKnownHostsFile=/dev/null" >> /etc/ssh/ssh_config
+RUN jericho --import-endpoints tests/integration/test-standalone/endpoints.json
 
-CMD python3 tests/integration/test-converter/generate_hosts.py `dig apache +short` > /resolve.txt && jericho --delete-records && jericho --add-server=`dig +short jericho_replica` && chmod +x tests/integration/test-converter/run-and-verify.sh && bash -c ./tests/integration/test-converter/run-and-verify.sh
+CMD python3 tests/integration/test-cluster/generate_hosts.py `dig apache +short` > /resolve.txt && jericho --delete-records && jericho --add-server=`dig +short jericho_replica` && chmod +x tests/integration/test-cluster/run-and-verify.sh && bash -c ./tests/integration/test-cluster/run-and-verify.sh
 
