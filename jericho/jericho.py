@@ -208,15 +208,15 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--remove-server",
+    "--delete-server",
     type=str,
-    help="Remove a server to the server list, use like --remove-server 1.2.3.4",
+    help="Dlete a server to the server list, use like --delete-server 1.2.3.4",
 )
 
 parser.add_argument(
-    "--remove-servers",
+    "--delete-servers",
     action="store_true",
-    help="Remove all servers to the server list",
+    help="Delete all servers to the server list",
 )
 
 parser.add_argument(
@@ -738,10 +738,10 @@ def main() -> typing.Any:
             cloud = Cloud(provider=CustomServer(server, username, password))
             asyncio.run(cloud.setup(1))
 
-    if args.remove_server:
+    if args.delete_server:
         server_lookup.delete(args.remove_server)
 
-    if args.remove_servers:
+    if args.delete_servers:
         for server in server_lookup.get():
             server_lookup.delete(server)
 

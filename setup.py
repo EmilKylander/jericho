@@ -33,7 +33,8 @@ setup(
         "asyncssh",
         "aiofiles",
         "pyzmq",
-        "async_retrying"
+        "async_retrying",
+        "aiodnsresolver"
     ],
     # needs to be installed along with your package. Eg: 'caer'
     keywords=["python", "cluster", "security"],
