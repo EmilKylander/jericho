@@ -591,12 +591,10 @@ def run() -> None:
     # TODO: This updates every time now..
     if not args.nameservers and not args.resolve_list:
         logging.info("Updating DNS servers if there is a new update")
-        original_dns_servers = dns_server_lookup.get_all()
-        dns_servers = asyncio.run(pull_dns_servers(original_dns_servers))
-        if dns_servers:
-            dns_server_lookup.delete_all()
-            for server in dns_servers:
-                dns_server_lookup.save(server)
+        dns_servers = asyncio.run(pull_dns_servers())
+        dns_server_lookup.delete_all()
+        for server in dns_servers:
+            dns_server_lookup.save(server)
         dns_server_lookup.commit()
 
         NAMESERVERS = dns_server_lookup.get_all()

@@ -67,13 +67,13 @@ def merge_domains_with_endpoints(endpoints: list, domains: list) -> typing.Itera
         for domain in domains:
             for endpoint in endpoints:
                 responses.append(
-                    {'endpoint': f'{domain}{endpoint.get("endpoint")}', 'pattern': endpoint.get("pattern")}
+                    {'endpoint': f'{domain}{endpoint.get("endpoint")}', 'pattern': endpoint.get("pattern"), 'raw_endpoint': endpoint.get("endpoint")}
                 )
     else:
         for endpoint in endpoints:
             for domain in domains:
                 responses.append(
-                    {'endpoint': f'{domain}{endpoint.get("endpoint")}', 'pattern': endpoint.get("pattern")}
+                    {'endpoint': f'{domain}{endpoint.get("endpoint")}', 'pattern': endpoint.get("pattern"), "raw_endpoint": endpoint.get("endpoint")}
                 )
 
     return responses

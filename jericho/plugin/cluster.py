@@ -9,6 +9,7 @@ import zmq
 import threading
 import queue
 import base64
+from multiprocessing import Process
 from jericho.helpers import split_array_by
 from jericho.enums.cluster_response_type import ClusterResponseType
 
@@ -20,7 +21,6 @@ class Cluster:
         self.job_socket = None
         self.topic = "jericho_event"
         self.finished = 0
-        self.status = ""
 
     def start_zmq_server(self):
         logging.debug("Starting result server")
@@ -111,9 +111,6 @@ class Cluster:
             logging.info("Received message %s", messagedata)
 
             if messagedata == "RESTART":
-                if self.status == "":
-                    continue
-
                 logging.info("Got a reboot message!")
                 os.system(
                     "echo 'pkill -9 python3 && nohup jericho --listen &' > /tmp/restart.sh && chmod +x /tmp/restart.sh && bash -c /tmp/restart.sh"
@@ -132,7 +129,7 @@ class Cluster:
                 workload_uuid = messagedata.replace("SEND_FINISHED_JOBS ", "")
                 logging.info("Got a request to send back results on %s", workload_uuid)
 
-                '''
+                
                 self.send_zmq_message(
                     json.dumps(
                         {
@@ -142,7 +139,6 @@ class Cluster:
                         }
                     )
                 )
-                '''
 
             try:
                 messagedata = json.loads(messagedata)
@@ -151,18 +147,17 @@ class Cluster:
                 continue
 
             logging.info("Got job %s")
-            self.status = f"Working on {messagedata.get('workload_uuid')}"
 
-            callback(
+            proc = Process(target=callback(
                 messagedata.get("domains"),
                 messagedata.get("workload_uuid"),
                 messagedata.get("nameservers"),
                 messagedata.get("configuration"),
                 messagedata.get("endpoints"),
                 messagedata.get("dns_cache")
-            )
-            self.status = ""
-
+            ))
+            proc.start()
+            
     async def _restart_server(self, server):
         logging.info("Sending a restart message to %s", server)
         context = zmq.Context()

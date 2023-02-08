@@ -41,8 +41,9 @@ class Cloud:
                             f"/home/{get_username()}/.ssh/jericho_key.pub",
                             "/tmp/jericho/jericho_key",
                         )
+                        await conn.run(f"mkdir {home_directory}/.ssh") # the root directory does not have a .ssh directory on Linode
                         await conn.run(
-                            f"cat /tmp/jericho/jericho_key >> /{home_directory}/.ssh/authorized_keys"
+                            f"cat /tmp/jericho/jericho_key >> {home_directory}/.ssh/authorized_keys"
                         )
                         await conn.run("apt update -y")
                         await conn.run("apt install git python3 python3-pip -y")
@@ -104,12 +105,12 @@ class Cloud:
             res = await asyncio.gather(*instances)
             instances_created = instances_created + res
 
-        print("Waiting for all instances to be come ready")
+        logging.info("Waiting for all instances to be come ready")
         await self.block_until_ready(num_instances)
 
         # Wait an additional 60 seconds as it might take a while it to be reachable after it's ready
-        print("Waiting for all instances to connection ready")
-        await asyncio.sleep(60)
+        logging.info("Waiting for all instances to connection ready")
+        await asyncio.sleep(180)
 
         logging.info("Installing Jericho on %s instances..", num_instances)
         setup_clouds = [self.run_client(instance) for instance in instances_created]

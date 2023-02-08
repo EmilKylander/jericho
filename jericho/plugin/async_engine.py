@@ -27,7 +27,7 @@ class AsyncEngine():
         nameservers: list,
         settings: dict
         ):
-        self.workers = 10
+        self.workers = 100
         self.response_queue: asyncio.Queue = asyncio.Queue()
 
         self.max_content_length: int = 1000000  # 1Mb
@@ -50,6 +50,7 @@ class AsyncEngine():
         self.lock: asyncio.Lock = asyncio.Lock()
         self.queues = []
         self.finish_queues = []
+        self.finished_requests = 0
 
 
     def _parse_settings(self, settings: dict) -> dict:
@@ -62,6 +63,9 @@ class AsyncEngine():
 
         if not settings.get("max_content_size"):
             settings["max_content_size"] = self.max_content_length
+
+        if not settings.get("nameservers"):
+            settings["nameservers"] = self.nameservers
 
         return settings
 
@@ -85,6 +89,8 @@ class AsyncEngine():
             links = merge_domains_with_endpoints(endpoints, links)
 
         while True:
+            async with self.lock:
+                logging.info("Finished requests: %s", self.finished_requests)
             active_workers = 0
             for worker_id in range(0, self.workers-1):
                 if self.workers_status[worker_id] == WorkerStatus.WORKING:
@@ -145,17 +151,21 @@ class AsyncEngine():
                 async with self.lock:
                     self.workers_status[workerID] = WorkerStatus.WORKING
                 try:
-                    if isinstance(url, dict):
-                        fetch_result = await self.async_fetch.fetch(url.get("endpoint"))
-                    else:
-                        fetch_result = await self.async_fetch.fetch(url)
+                    fetch_result = await self.async_fetch.fetch(url.get("endpoint"))
 
-                    if fetch_result:
-                        if isinstance(url, dict):
-                            await self.response_queue.put({"result": fetch_result, "pattern": url.get("pattern")})
-                        else:
-                            await self.response_queue.put(fetch_result)
+                    if not fetch_result:
+                        continue
+                
+                    # This is for checking if the final redirected url contains the desired endpoint that we look for.
+                    # E.g /security.txt exists in test.com/security.txt. But /security.txt does not exist in test.com/?redirect=security.txt
+                    if url.get("raw_endpoint") not in fetch_result.get("url"):
+                        logging.debug("Endpoint %s does not exist in %s", url.get("raw_endpoint"), fetch_result.get("endpoint"))
+
+                    await self.response_queue.put({"result": fetch_result, "pattern": url.get("pattern")})
 
                 except Exception as e:
                     logging.error("Fetch caused an error: %s", e)
                 self.workers_status[workerID] = WorkerStatus.IDLE
+
+            async with self.lock:
+                self.finished_requests = self.finished_requests + len(urls)
